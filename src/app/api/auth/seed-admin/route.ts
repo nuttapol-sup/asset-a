@@ -7,27 +7,23 @@ export async function POST() {
   try {
     await connectToDatabase();
 
-    const existingAdmin = await User.findOne({ username: 'admin' });
-    if (existingAdmin) {
-      return NextResponse.json({
-        success: true,
-        message: 'บัญชี admin มีอยู่ในระบบแล้ว',
-        username: 'admin',
-      });
-    }
-
     const hashedPassword = await hashPassword('admin1234');
-    const admin = await User.create({
-      username: 'admin',
-      password: hashedPassword,
-      name: 'ผู้ดูแลระบบ (Admin)',
-      role: 'admin',
-      department: 'สำนักเทคโนโลยีสารสนเทศ',
-    });
+
+    const admin = await User.findOneAndUpdate(
+      { username: 'admin' },
+      {
+        username: 'admin',
+        password: hashedPassword,
+        name: 'ผู้ดูแลระบบ (Admin)',
+        role: 'admin',
+        department: 'สำนักเทคโนโลยีสารสนเทศ',
+      },
+      { upsert: true, new: true }
+    );
 
     return NextResponse.json({
       success: true,
-      message: 'สร้างบัญชีผู้ดูแลระบบ (admin / admin1234) สำเร็จแล้ว!',
+      message: 'สร้าง/อัปเดตรหัสผ่านบัญชีผู้ดูแลระบบ (Username: admin / Password: admin1234) เรียบร้อยแล้ว!',
       user: {
         username: admin.username,
         name: admin.name,
@@ -37,4 +33,8 @@ export async function POST() {
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message }, { status: 500 });
   }
+}
+
+export async function GET() {
+  return POST();
 }
