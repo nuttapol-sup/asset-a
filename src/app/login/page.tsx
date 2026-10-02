@@ -1,11 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Boxes, Lock, User } from 'lucide-react';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,8 +23,7 @@ export default function LoginPage() {
 
       const data = await res.json();
       if (data.success) {
-        router.push('/');
-        router.refresh();
+        window.location.href = '/';
       } else {
         setError(data.error || 'เข้าสู่ระบบไม่สำเร็จ');
       }
