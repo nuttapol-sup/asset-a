@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { UserPlus, Trash2, KeyRound, Building2 } from 'lucide-react';
+import { UserPlus, Trash2, KeyRound } from 'lucide-react';
+import { TMD_ORGANIZATION, TMDDivision } from '@/lib/organization';
 
 interface UserType {
   _id: string;
@@ -15,6 +16,7 @@ interface UserType {
 
 export default function UsersPage() {
   const [users, setUsers] = useState<UserType[]>([]);
+  const [divisions, setDivisions] = useState<TMDDivision[]>(TMD_ORGANIZATION);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -30,6 +32,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers();
+    fetchDivisions();
   }, []);
 
   const fetchUsers = async () => {
@@ -46,6 +49,21 @@ export default function UsersPage() {
       setLoading(false);
     }
   };
+
+  const fetchDivisions = async () => {
+    try {
+      const res = await fetch('/api/divisions');
+      const data = await res.json();
+      if (data.success && data.data.length > 0) {
+        setDivisions(data.data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const currentSelectedDivision = divisions.find((d) => d.name === formData.agency);
+  const currentSubDivisions = currentSelectedDivision ? currentSelectedDivision.subDivisions : [];
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,7 +223,7 @@ export default function UsersPage() {
       {/* Modal Create User */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-5 shadow-2xl">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
               <UserPlus className="w-5 h-5 text-indigo-600" />
               เพิ่มผู้ใช้งานใหม่
@@ -222,7 +240,7 @@ export default function UsersPage() {
                   placeholder="เช่น user001"
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                 />
               </div>
 
@@ -236,7 +254,7 @@ export default function UsersPage() {
                   placeholder="กำหนดรหัสผ่าน"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                 />
               </div>
 
@@ -250,19 +268,62 @@ export default function UsersPage() {
                   placeholder="เช่น นายสมชาย สายเทค"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">ส่วนราชการ</label>
-                <input
-                  type="text"
-                  placeholder="เช่น กรมอุตุนิยมวิทยา"
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  ส่วนราชการ (กอง / สำนัก / ศูนย์)
+                </label>
+                <select
                   value={formData.agency}
-                  onChange={(e) => setFormData({ ...formData, agency: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+                  onChange={(e) => {
+                    const selectedDivName = e.target.value;
+                    const selectedDiv = divisions.find((d) => d.name === selectedDivName);
+                    setFormData({
+                      ...formData,
+                      agency: selectedDivName,
+                      department: selectedDiv?.subDivisions[0] || '',
+                    });
+                  }}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-900"
+                >
+                  <option value="">-- เลือกส่วนราชการ --</option>
+                  {divisions.map((div) => (
+                    <option key={div.name} value={div.name}>
+                      {div.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  แผนก / สังกัด (ฝ่าย / กลุ่ม / ศูนย์)
+                </label>
+                {currentSubDivisions.length > 0 ? (
+                  <select
+                    value={formData.department}
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-900"
+                  >
+                    <option value="">-- เลือกแผนก / สังกัด --</option>
+                    {currentSubDivisions.map((sub) => (
+                      <option key={sub} value={sub}>
+                        {sub}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    placeholder="เช่น ฝ่ายเทคโนโลยีสารสนเทศ"
+                    value={formData.department}
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  />
+                )}
               </div>
 
               <div>
@@ -275,17 +336,6 @@ export default function UsersPage() {
                   <option value="staff">Staff (เจ้าหน้าที่)</option>
                   <option value="admin">Admin (ผู้ดูแลระบบ)</option>
                 </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">แผนก / สังกัด</label>
-                <input
-                  type="text"
-                  placeholder="เช่น ฝ่ายเทคโนโลยีสารสนเทศ"
-                  value={formData.department}
-                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
               </div>
 
               <div className="flex gap-2 pt-2">
