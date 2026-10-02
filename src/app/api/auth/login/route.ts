@@ -64,7 +64,7 @@ export async function POST(request: Request) {
 
     response.cookies.set('auth_token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, // Set to false so HTTP access (e.g. http://10.10.10.222:3002) allows cookie storage in browser
       sameSite: 'lax',
       path: '/',
       maxAge: 86400,
