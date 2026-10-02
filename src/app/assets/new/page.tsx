@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Upload, Image as ImageIcon, X } from 'lucide-react';
 import { TMD_ORGANIZATION } from '@/lib/organization';
+import { compressImage } from '@/lib/imageCompressor';
 
 interface CategoryType {
   _id: string;
@@ -48,14 +49,22 @@ export default function NewAssetPage() {
   }, []);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const data = new FormData();
-    data.append('file', file);
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
 
     setUploading(true);
     try {
+      let fileToUpload = rawFile;
+      try {
+        const compressed = await compressImage(rawFile, 1000, 1000, 0.78);
+        fileToUpload = compressed.compressedFile;
+      } catch (err) {
+        console.warn('Compression skipped, uploading original file', err);
+      }
+
+      const data = new FormData();
+      data.append('file', fileToUpload);
+
       const res = await fetch('/api/upload', {
         method: 'POST',
         body: data,

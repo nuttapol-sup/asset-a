@@ -33,11 +33,7 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Convert image buffer to base64 Data URI for guaranteed DB embedding
-    const mimeType = file.type || 'image/jpeg';
-    const base64Data = `data:${mimeType};base64,${buffer.toString('base64')}`;
-
-    // Create uploads directories in public folder and root folder for disk storage fallback
+    // Create uploads directories in public folder and root folder for safety
     const publicUploadDir = path.join(process.cwd(), 'public', 'uploads');
     const rootUploadDir = path.join(process.cwd(), 'uploads');
     
@@ -45,7 +41,7 @@ export async function POST(request: Request) {
     await mkdir(rootUploadDir, { recursive: true });
 
     // Generate clean unique filename
-    const ext = path.extname(file.name) || '.png';
+    const ext = path.extname(file.name) || '.jpg';
     const nameWithoutExt = path.basename(file.name, ext);
     const safeName = nameWithoutExt.replace(/[^a-zA-Z0-9]/g, '_') || 'img';
     const filename = `asset_${Date.now()}_${safeName.slice(0, 20)}${ext}`;
@@ -58,11 +54,13 @@ export async function POST(request: Request) {
     await writeFile(filePathRoot, buffer);
 
     const publicUrl = `/uploads/${filename}`;
-    
-    // Return both disk public URL and Base64 Data URI
+    const mimeType = file.type || 'image/jpeg';
+    const base64Data = `data:${mimeType};base64,${buffer.toString('base64')}`;
+
+    // Return both clean relative URL and compressed Base64 Data URI
     return NextResponse.json({ 
       success: true, 
-      url: base64Data, // Default to Base64 for 100% reliable cross-device rendering (QR Scan, PM2, Git)
+      url: publicUrl,
       fileUrl: publicUrl,
       base64: base64Data 
     });

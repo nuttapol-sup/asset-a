@@ -328,11 +328,25 @@ export default function AssetsListPage() {
                   <tr key={asset._id} className="hover:bg-slate-50/80 transition">
                     <td className="py-3 px-4 text-center">
                       {asset.imageUrl ? (
-                        <img
-                          src={asset.imageUrl}
-                          alt={asset.name}
-                          className="w-10 h-10 object-cover rounded-lg border border-slate-200 mx-auto shadow-2xs"
-                        />
+                        <div className="relative w-10 h-10 mx-auto">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={asset.imageUrl}
+                            alt={asset.name}
+                            className="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              const parent = e.currentTarget.parentElement;
+                              if (parent) {
+                                const fallback = parent.querySelector('.table-img-fallback');
+                                if (fallback) fallback.classList.remove('hidden');
+                              }
+                            }}
+                          />
+                          <div className="table-img-fallback hidden w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center border border-slate-200 text-slate-400">
+                            <ImageIcon className="w-5 h-5" />
+                          </div>
+                        </div>
                       ) : (
                         <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center mx-auto border border-slate-200 text-slate-400">
                           <ImageIcon className="w-5 h-5" />

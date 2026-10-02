@@ -7,6 +7,7 @@ import { ArrowLeft, Save, Trash2, Printer, QrCode, Calculator, TrendingDown, Use
 import { QRCodeSVG } from 'qrcode.react';
 import { calculateStraightLineDepreciation, DepreciationResult } from '@/lib/depreciation';
 import { TMD_ORGANIZATION } from '@/lib/organization';
+import { compressImage } from '@/lib/imageCompressor';
 
 interface CategoryType {
   _id: string;
@@ -59,14 +60,22 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
   }, [id]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const data = new FormData();
-    data.append('file', file);
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
 
     setUploading(true);
     try {
+      let fileToUpload = rawFile;
+      try {
+        const compressed = await compressImage(rawFile, 1000, 1000, 0.78);
+        fileToUpload = compressed.compressedFile;
+      } catch (err) {
+        console.warn('Compression skipped, uploading original file', err);
+      }
+
+      const data = new FormData();
+      data.append('file', fileToUpload);
+
       const res = await fetch('/api/upload', {
         method: 'POST',
         body: data,
