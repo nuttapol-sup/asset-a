@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { connectToDatabase } from '@/lib/db';
+import User from '@/models/User';
 import { verifyJWT } from '@/lib/auth';
 
 export async function GET() {
@@ -16,7 +18,20 @@ export async function GET() {
       return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 });
     }
 
-    return NextResponse.json({ success: true, user: payload });
+    await connectToDatabase();
+    const dbUser = await User.findById(payload.userId, '-password');
+
+    return NextResponse.json({
+      success: true,
+      user: {
+        userId: payload.userId,
+        username: payload.username,
+        name: dbUser?.name || payload.name,
+        role: dbUser?.role || payload.role,
+        agency: dbUser?.agency || '',
+        department: dbUser?.department || '',
+      },
+    });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message }, { status: 500 });
   }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Search, Filter, PlusCircle, Eye, Trash2, QrCode, Image as ImageIcon } from 'lucide-react';
+import { Search, Filter, PlusCircle, Eye, Trash2, QrCode, Image as ImageIcon, ShieldCheck } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 interface AssetType {
@@ -45,6 +45,7 @@ export default function AssetsListPage() {
   const [divisionFilter, setDivisionFilter] = useState('');
   const [subDivisionFilter, setSubDivisionFilter] = useState('');
   const [qrModalAsset, setQrModalAsset] = useState<AssetType | null>(null);
+  const [scope, setScope] = useState<{ role: string; agency?: string; department?: string } | null>(null);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -98,6 +99,9 @@ export default function AssetsListPage() {
       const data = await res.json();
       if (data.success) {
         setAssets(data.data);
+        if (data.scope) {
+          setScope(data.scope);
+        }
       }
     } catch (err: any) {
       console.error(err);
@@ -146,8 +150,8 @@ export default function AssetsListPage() {
         );
       case 'รอซ่อม':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full bg-sky-50 text-sky-700 border border-sky-200/80 whitespace-nowrap shadow-2xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0"></span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full bg-blue-50 text-blue-700 border border-blue-200/80 whitespace-nowrap shadow-2xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></span>
             รอซ่อม
           </span>
         );
@@ -160,8 +164,8 @@ export default function AssetsListPage() {
         );
       case 'แทงจำหน่าย':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-700 border border-slate-300/80 whitespace-nowrap shadow-2xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0"></span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-700 border border-slate-200/80 whitespace-nowrap shadow-2xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-500 shrink-0"></span>
             แทงจำหน่าย
           </span>
         );
@@ -183,27 +187,29 @@ export default function AssetsListPage() {
           <p className="text-sm text-slate-500 mt-1">จัดการ ค้นหา และตรวจสอบสถานะครุภัณฑ์ในองค์กร ({totalAssets} รายการ)</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={async () => {
-              if (!confirm('คุณต้องการลบข้อมูลครุภัณฑ์ทั้งหมดออกจากระบบใช่หรือไม่?')) return;
-              try {
-                const res = await fetch('/api/assets/clear', { method: 'POST' });
-                const data = await res.json();
-                if (data.success) {
-                  alert(data.message || 'ลบข้อมูลครุภัณฑ์ตัวอย่างเรียบร้อยแล้ว');
-                  fetchAssets();
-                } else {
-                  alert('เกิดข้อผิดพลาด: ' + data.error);
+          {scope?.role === 'admin' && (
+            <button
+              onClick={async () => {
+                if (!confirm('คุณต้องการลบข้อมูลครุภัณฑ์ทั้งหมดออกจากระบบใช่หรือไม่?')) return;
+                try {
+                  const res = await fetch('/api/assets/clear', { method: 'POST' });
+                  const data = await res.json();
+                  if (data.success) {
+                    alert(data.message || 'ลบข้อมูลครุภัณฑ์ตัวอย่างเรียบร้อยแล้ว');
+                    fetchAssets();
+                  } else {
+                    alert('เกิดข้อผิดพลาด: ' + data.error);
+                  }
+                } catch (err: any) {
+                  alert('เกิดข้อผิดพลาด: ' + err.message);
                 }
-              } catch (err: any) {
-                alert('เกิดข้อผิดพลาด: ' + err.message);
-              }
-            }}
-            className="flex items-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3.5 py-2.5 rounded-xl font-bold text-sm transition shadow-2xs cursor-pointer"
-          >
-            <Trash2 className="w-4 h-4" />
-            ลบข้อมูลตัวอย่างทั้งหมด
-          </button>
+              }}
+              className="flex items-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3.5 py-2.5 rounded-xl font-bold text-sm transition shadow-2xs cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" />
+              ลบข้อมูลตัวอย่างทั้งหมด
+            </button>
+          )}
           <Link
             href="/assets/new"
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition shadow-sm self-start sm:self-auto"
@@ -213,6 +219,21 @@ export default function AssetsListPage() {
           </Link>
         </div>
       </div>
+
+      {/* Staff User Scope Notification Banner */}
+      {scope && scope.role !== 'admin' && (scope.agency || scope.department) && (
+        <div className="bg-indigo-50/90 border border-indigo-200/80 rounded-2xl p-4 flex items-center gap-3 text-indigo-950 text-sm font-semibold shadow-2xs">
+          <div className="p-2 bg-indigo-600 text-white rounded-xl shrink-0">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="font-bold text-indigo-950">จำกัดสิทธิ์การแสดงผลข้อมูลตามสังกัดของผู้ใช้งาน (Staff Role Scoping)</p>
+            <p className="text-xs text-indigo-700 mt-0.5">
+              แสดงเฉพาะรายการครุภัณฑ์ของ {scope.department ? `สังกัด/แผนก: "${scope.department}"` : ''} {scope.agency ? `(${scope.agency})` : ''}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Filter Bar */}
       <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
@@ -259,84 +280,25 @@ export default function AssetsListPage() {
             </select>
           </div>
 
-          <div className="relative">
-            <select
-              value={divisionFilter}
-              onChange={(e) => {
-                setDivisionFilter(e.target.value);
-                setSubDivisionFilter(''); // Reset subDivision when division changes
-              }}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition font-medium text-slate-800"
-            >
-              <option value="">ทุกกอง / สำนัก / ศูนย์</option>
-              {divisions.map((div) => (
-                <option key={div._id} value={div.name}>
-                  {div.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Second Filter Row for Sub-division */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 pt-1 border-t border-slate-100">
-          <div className="lg:col-span-3 flex items-center gap-3 text-xs text-slate-600 flex-wrap">
-            {divisionFilter && (
-              <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold rounded-lg border border-indigo-200">
-                🏢 กรองเฉพาะกอง: {divisionFilter} {subDivisionFilter ? `> ${subDivisionFilter}` : '(ทุกฝ่ายในกองนี้)'}
-              </span>
-            )}
-
-            {(search || statusFilter || categoryFilter || divisionFilter || subDivisionFilter) && (
-              <button
-                onClick={() => {
-                  setSearch('');
-                  setStatusFilter('');
-                  setCategoryFilter('');
-                  setDivisionFilter('');
+          {scope?.role === 'admin' && (
+            <div className="relative">
+              <select
+                value={divisionFilter}
+                onChange={(e) => {
+                  setDivisionFilter(e.target.value);
                   setSubDivisionFilter('');
                 }}
-                className="text-rose-600 hover:text-rose-800 font-semibold cursor-pointer underline"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition font-medium"
               >
-                ล้างตัวกรองทั้งหมด (Clear All Filters)
-              </button>
-            )}
-          </div>
-
-          <div className="relative lg:col-span-2">
-            <select
-              value={subDivisionFilter}
-              onChange={(e) => setSubDivisionFilter(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition font-medium text-slate-800"
-            >
-              <option value="">
-                {divisionFilter ? `ทุกส่วนราชการใน (${divisionFilter})` : 'ทุกส่วนราชการ / ฝ่าย / กลุ่ม'}
-              </option>
-              {divisionFilter ? (
-                divisions
-                  .filter((d) => d.name === divisionFilter)
-                  .map((div) => (
-                    <optgroup key={div._id} label={`📂 ${div.name}`}>
-                      {div.subDivisions.map((sub) => (
-                        <option key={`${div._id}-${sub}`} value={sub}>
-                          {sub}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))
-              ) : (
-                divisions.map((div) => (
-                  <optgroup key={div._id} label={`📂 ${div.name}`}>
-                    {div.subDivisions.map((sub) => (
-                      <option key={`${div._id}-${sub}`} value={sub}>
-                        {sub}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))
-              )}
-            </select>
-          </div>
+                <option value="">ทุกส่วนราชการ (All Divisions)</option>
+                {divisions.map((div) => (
+                  <option key={div._id} value={div.name}>
+                    {div.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -346,171 +308,151 @@ export default function AssetsListPage() {
           <div className="flex items-center justify-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
           </div>
-        ) : paginatedAssets.length > 0 ? (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
-                  <tr>
-                    <th className="py-3.5 px-4">เลขครุภัณฑ์ (2 แบบ)</th>
-                    <th className="py-3.5 px-4">ชื่อครุภัณฑ์ / ยี่ห้อ - รุ่น</th>
-                    <th className="py-3.5 px-4">หมวดหมู่</th>
-                    <th className="py-3.5 px-4">หน่วยงาน (กอง / ส่วน)</th>
-                    <th className="py-3.5 px-4">สถานที่จัดเก็บ</th>
-                    <th className="py-3.5 px-4">ผู้รับผิดชอบ</th>
-                    <th className="py-3.5 px-4 text-right">ราคา (บาท)</th>
-                    <th className="py-3.5 px-4 text-center">สถานะ</th>
-                    <th className="py-3.5 px-4 text-center">จัดการ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {paginatedAssets.map((asset) => (
-                    <tr key={asset._id} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3.5 px-4">
-                        <div className="font-mono font-bold text-indigo-600">{asset.assetCode}</div>
-                        {asset.secondaryAssetCode && (
-                          <div className="font-mono text-xs text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded w-fit border border-amber-200/80 mt-0.5">
-                            {asset.secondaryAssetCode}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-3">
-                          {asset.imageUrl ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
-                              src={asset.imageUrl}
-                              alt={asset.name}
-                              className="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0 shadow-2xs"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200/80 flex items-center justify-center shrink-0 text-slate-400">
-                              <ImageIcon className="w-5 h-5 text-slate-300" />
-                            </div>
-                          )}
-                          <div>
-                            <div className="font-semibold text-slate-900">{asset.name}</div>
-                            {(asset.brand || asset.model) && (
-                              <div className="text-xs text-slate-400">
-                                {asset.brand} {asset.model}
-                              </div>
-                            )}
-                          </div>
+        ) : assets.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[900px]">
+              <thead>
+                <tr className="bg-slate-50/80 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="py-4 px-4 text-center w-16">รูปภาพ</th>
+                  <th className="py-4 px-4">รหัสครุภัณฑ์</th>
+                  <th className="py-4 px-4">ชื่อรายการครุภัณฑ์</th>
+                  <th className="py-4 px-4">หมวดหมู่</th>
+                  <th className="py-4 px-4">กอง / ฝ่ายงาน</th>
+                  <th className="py-4 px-4 text-right">ราคาจัดซื้อ</th>
+                  <th className="py-4 px-4 text-center">สถานะ</th>
+                  <th className="py-4 px-4 text-center">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-sm">
+                {paginatedAssets.map((asset) => (
+                  <tr key={asset._id} className="hover:bg-slate-50/80 transition">
+                    <td className="py-3 px-4 text-center">
+                      {asset.imageUrl ? (
+                        <img
+                          src={asset.imageUrl}
+                          alt={asset.name}
+                          className="w-10 h-10 object-cover rounded-lg border border-slate-200 mx-auto shadow-2xs"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center mx-auto border border-slate-200 text-slate-400">
+                          <ImageIcon className="w-5 h-5" />
                         </div>
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-600">{asset.category}</td>
-                      <td className="py-3.5 px-4">
-                        <div className="font-medium text-slate-800">{asset.division || '-'}</div>
-                        {asset.subDivision && <div className="text-xs text-slate-500">{asset.subDivision}</div>}
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-600">{asset.location}</td>
-                      <td className="py-3.5 px-4 text-slate-600">{asset.custodian}</td>
-                      <td className="py-3.5 px-4 text-right font-semibold text-slate-900">
-                        ฿{asset.price.toLocaleString()}
-                      </td>
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap">{getStatusBadge(asset.status)}</td>
-                      <td className="py-3.5 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => setQrModalAsset(asset)}
-                            title="ดู QR Code"
-                            className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition cursor-pointer"
-                          >
-                            <QrCode className="w-4 h-4" />
-                          </button>
-                          <Link
-                            href={`/assets/${asset._id}`}
-                            title="ดูรายละเอียด/แก้ไข"
-                            className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Link>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 font-mono font-bold text-indigo-600 text-xs">
+                      <div>{asset.assetCode}</div>
+                      {asset.secondaryAssetCode && (
+                        <div className="text-[11px] font-mono text-slate-400 font-normal">
+                          {asset.secondaryAssetCode}
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="font-semibold text-slate-900 line-clamp-1">{asset.name}</div>
+                      <div className="text-xs text-slate-500 line-clamp-1">
+                        {asset.brand && `${asset.brand} `}
+                        {asset.model && `(${asset.model})`}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-slate-600 whitespace-nowrap">{asset.category}</td>
+                    <td className="py-3 px-4">
+                      <div className="text-xs font-semibold text-slate-800 line-clamp-1">
+                        {asset.division || '-'}
+                      </div>
+                      <div className="text-[11px] text-slate-500 line-clamp-1">
+                        {asset.subDivision || '-'}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-right font-semibold text-slate-900 whitespace-nowrap">
+                      ฿{asset.price.toLocaleString()}
+                    </td>
+                    <td className="py-3 px-4 text-center">{getStatusBadge(asset.status)}</td>
+                    <td className="py-3 px-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <Link
+                          href={`/assets/${asset._id}`}
+                          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                          title="ดูรายละเอียด"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                        <button
+                          onClick={() => setQrModalAsset(asset)}
+                          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                          title="สร้าง QR Code"
+                        >
+                          <QrCode className="w-4 h-4" />
+                        </button>
+                        {scope?.role === 'admin' && (
                           <button
                             onClick={() => handleDelete(asset._id, asset.name)}
-                            title="ลบ"
-                            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                            title="ลบรายการ"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-16 text-slate-400">ไม่พบข้อมูลครุภัณฑ์ที่ค้นหา</div>
+        )}
+
+        {/* Pagination Footer */}
+        {totalAssets > 0 && (
+          <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-medium text-slate-600">
+            <div>
+              แสดง <span className="font-bold text-slate-900">{startIndex + 1}</span> ถึง{' '}
+              <span className="font-bold text-slate-900">{endIndex}</span> จากทั้งหมด{' '}
+              <span className="font-bold text-slate-900">{totalAssets}</span> รายการ
             </div>
 
-            {/* Pagination Controls Footer */}
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-slate-600">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span>แสดงแถวต่อหน้า:</span>
+                <span>แสดงต่อหน้า:</span>
                 <select
                   value={pageSize}
                   onChange={(e) => {
                     setPageSize(Number(e.target.value));
                     setCurrentPage(1);
                   }}
-                  className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-bold text-slate-800"
+                  className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
                 >
-                  <option value={10}>10 แถว</option>
-                  <option value={25}>25 แถว</option>
-                  <option value={50}>50 แถว</option>
-                  <option value={100}>100 แถว</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
                   <option value={0}>ทั้งหมด (All)</option>
                 </select>
-                <span className="text-slate-500 ml-2">
-                  (แสดง {totalAssets > 0 ? startIndex + 1 : 0} ถึง {endIndex} จาก {totalAssets} รายการ)
-                </span>
               </div>
 
               {pageSize > 0 && totalPages > 1 && (
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => setCurrentPage(1)}
+                    onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                     disabled={currentPage === 1}
-                    className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
-                  >
-                    หน้าแรก
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                    className="px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 cursor-pointer font-bold"
                   >
                     ก่อนหน้า
                   </button>
-
-                  <span className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg font-bold">
-                    หน้า {currentPage} / {totalPages}
+                  <span className="px-2 font-bold text-indigo-600">
+                    {currentPage} / {totalPages}
                   </span>
-
                   <button
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                     disabled={currentPage === totalPages}
-                    className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                    className="px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 cursor-pointer font-bold"
                   >
                     ถัดไป
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage(totalPages)}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
-                  >
-                    หน้าสุดท้าย
                   </button>
                 </div>
               )}
             </div>
-          </>
-        ) : (
-          <div className="text-center py-16 space-y-3">
-            <p className="text-slate-400 text-base">ไม่พบรายการครุภัณฑ์ที่ตรงกับการค้นหา</p>
-            <Link
-              href="/assets/new"
-              className="inline-flex items-center gap-2 text-indigo-600 font-semibold hover:underline text-sm"
-            >
-              <PlusCircle className="w-4 h-4" /> เพิ่มครุภัณฑ์ใหม่ตอนนี้
-            </Link>
           </div>
         )}
       </div>
@@ -518,41 +460,27 @@ export default function AssetsListPage() {
       {/* QR Code Modal */}
       {qrModalAsset && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl text-center">
-            <h3 className="text-lg font-bold text-slate-900">QR Code พิมพ์สติกเกอร์</h3>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-slate-900">QR Code สำหรับติดสติ๊กเกอร์</h3>
+            <p className="text-xs text-slate-500">{qrModalAsset.name}</p>
 
-            <div className="p-4 bg-yellow-300 rounded-xl border-2 border-slate-900 space-y-2 text-slate-900 font-mono">
-              <div className="text-xs font-extrabold flex flex-col items-center justify-center gap-0.5">
-                <span>{qrModalAsset.assetCode}</span>
-                {qrModalAsset.secondaryAssetCode && <span>{qrModalAsset.secondaryAssetCode}</span>}
-              </div>
-
-              <div className="bg-white p-3 rounded-lg inline-block shadow-inner">
-                <QRCodeSVG
-                  value={typeof window !== 'undefined' ? `${window.location.origin}/scan/${qrModalAsset._id}` : `/scan/${qrModalAsset._id}`}
-                  size={150}
-                />
-              </div>
-
-              <div className="text-[11px] font-sans font-bold truncate px-2">
-                {qrModalAsset.name}
-              </div>
+            <div className="bg-white p-4 inline-block border-2 border-slate-200 rounded-xl shadow-inner">
+              <QRCodeSVG
+                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/scan/${qrModalAsset._id}`}
+                size={180}
+              />
             </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => window.print()}
-                className="flex-1 bg-indigo-600 text-white py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition cursor-pointer"
-              >
-                พิมพ์สติกเกอร์
-              </button>
-              <button
-                onClick={() => setQrModalAsset(null)}
-                className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl text-sm font-semibold hover:bg-slate-200 transition cursor-pointer"
-              >
-                ปิด
-              </button>
+            <div className="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 py-2 rounded-lg">
+              {qrModalAsset.assetCode}
             </div>
+
+            <button
+              onClick={() => setQrModalAsset(null)}
+              className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-sm transition"
+            >
+              ปิดหน้าต่าง
+            </button>
           </div>
         </div>
       )}
