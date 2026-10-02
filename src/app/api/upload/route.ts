@@ -33,17 +33,25 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Create uploads directory in public folder
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-    await mkdir(uploadDir, { recursive: true });
+    // Create uploads directory in public folder and root folder for safety
+    const publicUploadDir = path.join(process.cwd(), 'public', 'uploads');
+    const rootUploadDir = path.join(process.cwd(), 'uploads');
+    
+    await mkdir(publicUploadDir, { recursive: true });
+    await mkdir(rootUploadDir, { recursive: true });
 
     // Generate clean unique filename
     const ext = path.extname(file.name) || '.png';
-    const safeName = file.name.replace(/[^a-zA-Z0-9]/g, '_');
+    const nameWithoutExt = path.basename(file.name, ext);
+    const safeName = nameWithoutExt.replace(/[^a-zA-Z0-9]/g, '_') || 'img';
     const filename = `asset_${Date.now()}_${safeName.slice(0, 20)}${ext}`;
-    const filePath = path.join(uploadDir, filename);
 
-    await writeFile(filePath, buffer);
+    const filePathPublic = path.join(publicUploadDir, filename);
+    const filePathRoot = path.join(rootUploadDir, filename);
+
+    // Save to both locations to ensure availability regardless of Next.js setup
+    await writeFile(filePathPublic, buffer);
+    await writeFile(filePathRoot, buffer);
 
     const publicUrl = `/uploads/${filename}`;
     return NextResponse.json({ success: true, url: publicUrl });
