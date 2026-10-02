@@ -39,24 +39,25 @@ export async function POST(request: Request) {
     }
 
     await connectToDatabase();
-    const { username, password, name, role, department } = await request.json();
+    const { username, password, name, role, department, agency } = await request.json();
 
     if (!username || !password || !name) {
       return NextResponse.json({ success: false, error: 'กรุณากรอก Username, Password และชื่อ-นามสกุล' }, { status: 400 });
     }
 
-    const existingUser = await User.findOne({ username });
+    const existingUser = await User.findOne({ username: username.trim() });
     if (existingUser) {
       return NextResponse.json({ success: false, error: 'Username นี้ถูกใช้งานแล้ว' }, { status: 400 });
     }
 
     const hashedPassword = await hashPassword(password);
     const newUser = await User.create({
-      username,
+      username: username.trim(),
       password: hashedPassword,
-      name,
+      name: name.trim(),
       role: role || 'staff',
-      department,
+      department: department?.trim() || '',
+      agency: agency?.trim() || '',
     });
 
     return NextResponse.json(
@@ -68,6 +69,7 @@ export async function POST(request: Request) {
           name: newUser.name,
           role: newUser.role,
           department: newUser.department,
+          agency: newUser.agency,
         },
       },
       { status: 201 }

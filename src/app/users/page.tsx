@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { UserPlus, Trash2 } from 'lucide-react';
+import { UserPlus, Trash2, KeyRound, Building2 } from 'lucide-react';
 
 interface UserType {
   _id: string;
   username: string;
   name: string;
   role: 'admin' | 'staff';
+  agency?: string;
   department?: string;
   createdAt: string;
 }
@@ -23,6 +24,7 @@ export default function UsersPage() {
     password: '',
     name: '',
     role: 'staff',
+    agency: '',
     department: '',
   });
 
@@ -64,7 +66,7 @@ export default function UsersPage() {
       if (data.success) {
         alert('สร้างผู้ใช้งานใหม่สำเร็จ!');
         setShowModal(false);
-        setFormData({ username: '', password: '', name: '', role: 'staff', department: '' });
+        setFormData({ username: '', password: '', name: '', role: 'staff', agency: '', department: '' });
         fetchUsers();
       } else {
         alert('เกิดข้อผิดพลาด: ' + data.error);
@@ -73,6 +75,27 @@ export default function UsersPage() {
       alert('เกิดข้อผิดพลาด: ' + err.message);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async (id: string, username: string) => {
+    if (!confirm(`ยืนยันการรีเซ็ตรหัสผ่านสำหรับผู้ใช้ "@${username}" เป็น "tmd1234" หรือไม่?`)) return;
+
+    try {
+      const res = await fetch(`/api/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reset-password', newPassword: 'tmd1234' }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert(`รีเซ็ตรหัสผ่านสำหรับ @${username} เป็น "tmd1234" เรียบร้อยแล้ว!`);
+      } else {
+        alert('เกิดข้อผิดพลาด: ' + data.error);
+      }
+    } catch (err: any) {
+      alert('เกิดข้อผิดพลาด: ' + err.message);
     }
   };
 
@@ -98,7 +121,7 @@ export default function UsersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">จัดการผู้ใช้งานในระบบ</h1>
-          <p className="text-sm text-slate-500 mt-1">สิทธิ์สำหรับ Admin ในการเพิ่ม ลบ และกำหนดบทบาทผู้ใช้งาน</p>
+          <p className="text-sm text-slate-500 mt-1">สิทธิ์สำหรับ Admin ในการเพิ่ม ลบ รีเซ็ตรหัสผ่าน และกำหนดส่วนราชการ/บทบาทผู้ใช้งาน</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -122,6 +145,7 @@ export default function UsersPage() {
                 <tr>
                   <th className="py-3.5 px-4">Username</th>
                   <th className="py-3.5 px-4">ชื่อ - นามสกุล</th>
+                  <th className="py-3.5 px-4">ส่วนราชการ</th>
                   <th className="py-3.5 px-4">แผนก / สังกัด</th>
                   <th className="py-3.5 px-4 text-center">บทบาท (Role)</th>
                   <th className="py-3.5 px-4">วันที่สร้าง</th>
@@ -133,6 +157,7 @@ export default function UsersPage() {
                   <tr key={u._id} className="hover:bg-slate-50/80 transition">
                     <td className="py-3.5 px-4 font-mono font-bold text-indigo-600">@{u.username}</td>
                     <td className="py-3.5 px-4 font-semibold text-slate-900">{u.name}</td>
+                    <td className="py-3.5 px-4 text-slate-700 font-medium">{u.agency || '-'}</td>
                     <td className="py-3.5 px-4 text-slate-600">{u.department || '-'}</td>
                     <td className="py-3.5 px-4 text-center">
                       {u.role === 'admin' ? (
@@ -149,13 +174,23 @@ export default function UsersPage() {
                       {new Date(u.createdAt).toLocaleDateString('th-TH')}
                     </td>
                     <td className="py-3.5 px-4 text-center">
-                      <button
-                        onClick={() => handleDeleteUser(u._id, u.username)}
-                        title="ลบผู้ใช้งาน"
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => handleResetPassword(u._id, u.username)}
+                          title="รีเซ็ตรหัสผ่านเป็น tmd1234"
+                          className="px-2.5 py-1 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition cursor-pointer inline-flex items-center gap-1"
+                        >
+                          <KeyRound className="w-3.5 h-3.5" />
+                          <span>Reset</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(u._id, u.username)}
+                          title="ลบผู้ใช้งาน"
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -184,7 +219,7 @@ export default function UsersPage() {
                 <input
                   type="text"
                   required
-                  placeholder="เช่น somchai"
+                  placeholder="เช่น user001"
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -215,6 +250,17 @@ export default function UsersPage() {
                   placeholder="เช่น นายสมชาย สายเทค"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">ส่วนราชการ</label>
+                <input
+                  type="text"
+                  placeholder="เช่น กรมอุตุนิยมวิทยา"
+                  value={formData.agency}
+                  onChange={(e) => setFormData({ ...formData, agency: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>

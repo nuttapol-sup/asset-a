@@ -13,6 +13,7 @@ const UserSchema = new Schema(
       default: 'staff',
     },
     department: { type: String, trim: true },
+    agency: { type: String, trim: true }, // ส่วนราชการ
   },
   { timestamps: true }
 );
