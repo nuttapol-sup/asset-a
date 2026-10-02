@@ -182,13 +182,36 @@ export default function AssetsListPage() {
           <h1 className="text-2xl font-bold text-slate-900">ทะเบียนครุภัณฑ์ทั้งหมด</h1>
           <p className="text-sm text-slate-500 mt-1">จัดการ ค้นหา และตรวจสอบสถานะครุภัณฑ์ในองค์กร ({totalAssets} รายการ)</p>
         </div>
-        <Link
-          href="/assets/new"
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition shadow-sm self-start sm:self-auto"
-        >
-          <PlusCircle className="w-4 h-4" />
-          เพิ่มครุภัณฑ์ใหม่
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={async () => {
+              if (!confirm('คุณต้องการลบข้อมูลครุภัณฑ์ทั้งหมดออกจากระบบใช่หรือไม่?')) return;
+              try {
+                const res = await fetch('/api/assets/clear', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                  alert(data.message || 'ลบข้อมูลครุภัณฑ์ตัวอย่างเรียบร้อยแล้ว');
+                  fetchAssets();
+                } else {
+                  alert('เกิดข้อผิดพลาด: ' + data.error);
+                }
+              } catch (err: any) {
+                alert('เกิดข้อผิดพลาด: ' + err.message);
+              }
+            }}
+            className="flex items-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3.5 py-2.5 rounded-xl font-bold text-sm transition shadow-2xs cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4" />
+            ลบข้อมูลตัวอย่างทั้งหมด
+          </button>
+          <Link
+            href="/assets/new"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition shadow-sm self-start sm:self-auto"
+          >
+            <PlusCircle className="w-4 h-4" />
+            เพิ่มครุภัณฑ์ใหม่
+          </Link>
+        </div>
       </div>
 
       {/* Filter Bar */}
