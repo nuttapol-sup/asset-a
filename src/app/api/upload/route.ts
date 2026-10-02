@@ -33,7 +33,11 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Create uploads directory in public folder and root folder for safety
+    // Convert image buffer to base64 Data URI for guaranteed DB embedding
+    const mimeType = file.type || 'image/jpeg';
+    const base64Data = `data:${mimeType};base64,${buffer.toString('base64')}`;
+
+    // Create uploads directories in public folder and root folder for disk storage fallback
     const publicUploadDir = path.join(process.cwd(), 'public', 'uploads');
     const rootUploadDir = path.join(process.cwd(), 'uploads');
     
@@ -49,12 +53,19 @@ export async function POST(request: Request) {
     const filePathPublic = path.join(publicUploadDir, filename);
     const filePathRoot = path.join(rootUploadDir, filename);
 
-    // Save to both locations to ensure availability regardless of Next.js setup
+    // Save to both locations
     await writeFile(filePathPublic, buffer);
     await writeFile(filePathRoot, buffer);
 
     const publicUrl = `/uploads/${filename}`;
-    return NextResponse.json({ success: true, url: publicUrl });
+    
+    // Return both disk public URL and Base64 Data URI
+    return NextResponse.json({ 
+      success: true, 
+      url: base64Data, // Default to Base64 for 100% reliable cross-device rendering (QR Scan, PM2, Git)
+      fileUrl: publicUrl,
+      base64: base64Data 
+    });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error?.message || 'Failed to upload image' },
