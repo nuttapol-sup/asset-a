@@ -1,15 +1,53 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { connectToDatabase } from '@/lib/db';
 import Asset from '@/models/Asset';
 import BorrowRecord from '@/models/BorrowRecord';
+import User from '@/models/User';
+import { verifyJWT } from '@/lib/auth';
 import { calculateStraightLineDepreciation } from '@/lib/depreciation';
 
 export async function GET() {
   try {
     await connectToDatabase();
 
-    // 1. Fetch active assets
-    const assets = await Asset.find({ deleteFlag: 0 }).sort({ createdAt: -1 });
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth_token')?.value;
+
+    let userRole = 'staff';
+    let userAgency = '';
+    let userDepartment = '';
+
+    if (token) {
+      const payload = await verifyJWT(token);
+      if (payload) {
+        userRole = (payload.role as string) || 'staff';
+        const dbUser = await User.findById(payload.userId);
+        if (dbUser) {
+          userAgency = dbUser.agency?.trim() || '';
+          userDepartment = dbUser.department?.trim() || '';
+        }
+      }
+    }
+
+    const query: any = { deleteFlag: 0 };
+
+    if (userRole !== 'admin') {
+      const conditions: any[] = [];
+      if (userDepartment) {
+        conditions.push({ subDivision: { $regex: `^${userDepartment}$`, $options: 'i' } });
+      }
+      if (userAgency) {
+        conditions.push({ division: { $regex: `^${userAgency}$`, $options: 'i' } });
+      }
+
+      if (conditions.length > 0) {
+        query.$and = [{ $or: conditions }];
+      }
+    }
+
+    // 1. Fetch scoped active assets
+    const assets = await Asset.find(query).sort({ createdAt: -1 });
 
     let totalPurchasePrice = 0;
     let totalNetBookValue = 0;
@@ -53,7 +91,7 @@ export async function GET() {
 
     // 2. Category Breakdown
     const categoryAgg = await Asset.aggregate([
-      { $match: { deleteFlag: 0 } },
+      { $match: query },
       {
         $group: {
           _id: '$category',
@@ -89,6 +127,11 @@ export async function GET() {
         categorySummary: categoryAgg,
         assets: assetReportList,
         borrows: borrowRecords,
+        scope: {
+          role: userRole,
+          agency: userAgency,
+          department: userDepartment,
+        },
       },
     });
   } catch (error: any) {

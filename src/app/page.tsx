@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Boxes, Banknote, ArrowLeftRight, Wrench, AlertTriangle, CheckCircle2, ShieldAlert, PlusCircle, TrendingDown, Calculator } from 'lucide-react';
+import { Boxes, Banknote, ArrowLeftRight, Wrench, AlertTriangle, CheckCircle2, ShieldAlert, PlusCircle, TrendingDown, Calculator, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
 interface DashboardStats {
@@ -18,6 +18,11 @@ interface DashboardStats {
   };
   activeBorrows: number;
   categoryStats: { _id: string; count: number; totalValue: number }[];
+  scope?: {
+    role: string;
+    agency?: string;
+    department?: string;
+  };
 }
 
 export default function DashboardPage() {
@@ -80,6 +85,21 @@ export default function DashboardPage() {
           <p className="text-sm text-slate-500 mt-1">สรุปข้อมูลครุภัณฑ์ มูลค่าทางบัญชี และค่าเสื่อมราคาสินทรัพย์</p>
         </div>
       </div>
+
+      {/* Staff User Scope Notification Banner */}
+      {stats?.scope && stats.scope.role !== 'admin' && (stats.scope.agency || stats.scope.department) && (
+        <div className="bg-indigo-50/90 border border-indigo-200/80 rounded-2xl p-4 flex items-center gap-3 text-indigo-950 text-sm font-semibold shadow-2xs">
+          <div className="p-2 bg-indigo-600 text-white rounded-xl shrink-0">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="font-bold text-indigo-950">จำกัดสิทธิ์การแสดงผลข้อมูลตามสังกัดของผู้ใช้งาน (Staff Role Scoping)</p>
+            <p className="text-xs text-indigo-700 mt-0.5">
+              แสดงเฉพาะสถิติสรุปครุภัณฑ์ของ {stats.scope.department ? `สังกัด/แผนก: "${stats.scope.department}"` : ''} {stats.scope.agency ? `(${stats.scope.agency})` : ''}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">

@@ -13,6 +13,7 @@ import {
   ArrowLeftRight,
   Filter,
   Search,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface AssetReportItem {
@@ -91,6 +92,7 @@ export default function ReportsPage() {
   const [categorySummary, setCategorySummary] = useState<CategorySummary[]>([]);
   const [assets, setAssets] = useState<AssetReportItem[]>([]);
   const [borrows, setBorrows] = useState<BorrowRecordItem[]>([]);
+  const [scope, setScope] = useState<{ role: string; agency?: string; department?: string } | null>(null);
 
   useEffect(() => {
     fetchReportData();
@@ -120,6 +122,9 @@ export default function ReportsPage() {
         setCategorySummary(data.data.categorySummary);
         setAssets(data.data.assets);
         setBorrows(data.data.borrows);
+        if (data.data.scope) {
+          setScope(data.data.scope);
+        }
       }
     } catch (err) {
       console.error('Error fetching report data:', err);
@@ -282,6 +287,21 @@ export default function ReportsPage() {
           </button>
         </div>
       </div>
+
+      {/* Staff User Scope Notification Banner */}
+      {scope && scope.role !== 'admin' && (scope.agency || scope.department) && (
+        <div className="bg-indigo-50/90 border border-indigo-200/80 rounded-2xl p-4 flex items-center gap-3 text-indigo-950 text-sm font-semibold shadow-2xs print:hidden">
+          <div className="p-2 bg-indigo-600 text-white rounded-xl shrink-0">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="font-bold text-indigo-950">จำกัดสิทธิ์การรายงานตามสังกัดของผู้ใช้งาน (Staff Role Scoping)</p>
+            <p className="text-xs text-indigo-700 mt-0.5">
+              รายงานจะแสดงเฉพาะรายการครุภัณฑ์ของ {scope.department ? `สังกัด/แผนก: "${scope.department}"` : ''} {scope.agency ? `(${scope.agency})` : ''}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Header for Print / PDF View only (Matching Image Header) */}
       <div className="hidden print:block mb-4 text-slate-900 border-b border-slate-300 pb-3">
