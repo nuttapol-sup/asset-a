@@ -2,7 +2,17 @@
 
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
-import { Boxes, Building2, MapPin, User, Calendar, Tag, ShieldAlert, CheckCircle2, AlertTriangle, FileText, ArrowRight, ExternalLink } from 'lucide-react';
+import {
+  Boxes,
+  Building2,
+  MapPin,
+  User,
+  CheckCircle2,
+  AlertTriangle,
+  ShieldAlert,
+  ExternalLink,
+  Image as ImageIcon,
+} from 'lucide-react';
 
 interface PublicAsset {
   _id: string;
@@ -29,6 +39,7 @@ export default function ScanAssetPage({ params }: { params: Promise<{ id: string
   const [asset, setAsset] = useState<PublicAsset | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     fetchAssetData();
@@ -129,10 +140,23 @@ export default function ScanAssetPage({ params }: { params: Promise<{ id: string
           </div>
         ) : (
           <div className="p-6 space-y-5">
-            {asset.imageUrl && (
-              <div className="w-full h-56 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+            {/* Asset Image display */}
+            {asset.imageUrl && !imageError ? (
+              <div className="w-full h-56 rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative bg-slate-50">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={asset.imageUrl} alt={asset.name} className="w-full h-full object-cover" />
+                <img
+                  src={asset.imageUrl}
+                  alt={asset.name}
+                  className="w-full h-full object-cover"
+                  onError={() => setImageError(true)}
+                />
+              </div>
+            ) : (
+              <div className="w-full h-36 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 p-4">
+                <ImageIcon className="w-8 h-8 text-slate-300 mb-1" />
+                <span className="text-xs font-medium">
+                  {asset.imageUrl && imageError ? 'ไม่สามารถโหลดรูปภาพได้' : 'ไม่มีรูปภาพครุภัณฑ์'}
+                </span>
               </div>
             )}
 
