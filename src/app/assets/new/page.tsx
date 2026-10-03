@@ -55,30 +55,28 @@ export default function NewAssetPage() {
 
     setUploading(true);
     try {
-      // 1. Immediately read file as Data URL for instant 0ms preview
-      let activeDataUrl = '';
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        const previewUrl = evt.target?.result as string;
-        if (previewUrl) {
-          activeDataUrl = previewUrl;
-          setFormData((prev) => ({ ...prev, imageUrl: previewUrl }));
-        }
-      };
-      reader.readAsDataURL(rawFile);
-
-      // 2. Compress image for lightweight storage (~60KB)
+      // 1. Generate compressed base64 data URI directly in browser (~60KB)
+      let base64Url = '';
       let fileToUpload = rawFile;
       try {
         const compressed = await compressImage(rawFile, 1000, 1000, 0.78);
         fileToUpload = compressed.compressedFile;
-        activeDataUrl = compressed.dataUrl;
-        setFormData((prev) => ({ ...prev, imageUrl: compressed.dataUrl }));
+        base64Url = compressed.dataUrl;
       } catch (err) {
-        console.warn('Compression skipped, using raw file', err);
+        console.warn('Compression skipped', err);
+        base64Url = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (evt) => resolve(evt.target?.result as string || '');
+          reader.readAsDataURL(rawFile);
+        });
       }
 
-      // 3. Upload to server in background
+      // Immediately set Base64 Data URI in React state for fail-proof preview
+      if (base64Url) {
+        setFormData((prev) => ({ ...prev, imageUrl: base64Url }));
+      }
+
+      // 2. Upload file to server as backup
       const data = new FormData();
       data.append('file', fileToUpload);
 
@@ -87,16 +85,15 @@ export default function NewAssetPage() {
         body: data,
       });
       const result = await res.json();
-      if (result.success) {
-        const finalUrl = result.base64 || (result.url?.startsWith('data:') ? result.url : null) || activeDataUrl;
-        if (finalUrl) {
-          setFormData((prev) => ({ ...prev, imageUrl: finalUrl }));
-        }
-      } else {
-        alert('เกิดข้อผิดพลาดในการอัปโหลด: ' + result.error);
+
+      // If server returned a valid Base64 data URI, update it; otherwise keep local base64Url
+      if (result.success && result.base64) {
+        setFormData((prev) => ({ ...prev, imageUrl: result.base64 }));
+      } else if (base64Url) {
+        setFormData((prev) => ({ ...prev, imageUrl: base64Url }));
       }
     } catch (err: any) {
-      alert('อัปโหลดล้มเหลว: ' + err.message);
+      alert('อัปโหลดล้มเหลว: ' + (err?.message || 'เกิดข้อผิดพลาดในการอัปโหลด'));
     } finally {
       setUploading(false);
     }
