@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Upload, Image as ImageIcon, X } from 'lucide-react';
@@ -20,6 +20,7 @@ interface DivisionType {
 
 export default function NewAssetPage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [categories, setCategories] = useState<CategoryType[]>([]);
@@ -55,10 +56,12 @@ export default function NewAssetPage() {
     setUploading(true);
     try {
       // 1. Immediately read file as Data URL for instant 0ms preview
+      let activeDataUrl = '';
       const reader = new FileReader();
       reader.onload = (evt) => {
         const previewUrl = evt.target?.result as string;
         if (previewUrl) {
+          activeDataUrl = previewUrl;
           setFormData((prev) => ({ ...prev, imageUrl: previewUrl }));
         }
       };
@@ -66,20 +69,16 @@ export default function NewAssetPage() {
 
       // 2. Compress image for lightweight storage (~60KB)
       let fileToUpload = rawFile;
-      let compressedDataUrl = '';
       try {
         const compressed = await compressImage(rawFile, 1000, 1000, 0.78);
         fileToUpload = compressed.compressedFile;
-        compressedDataUrl = compressed.dataUrl;
+        activeDataUrl = compressed.dataUrl;
+        setFormData((prev) => ({ ...prev, imageUrl: compressed.dataUrl }));
       } catch (err) {
         console.warn('Compression skipped, using raw file', err);
       }
 
-      if (compressedDataUrl) {
-        setFormData((prev) => ({ ...prev, imageUrl: compressedDataUrl }));
-      }
-
-      // 3. Upload to server
+      // 3. Upload to server in background
       const data = new FormData();
       data.append('file', fileToUpload);
 
@@ -89,8 +88,10 @@ export default function NewAssetPage() {
       });
       const result = await res.json();
       if (result.success) {
-        const finalUrl = result.url || result.base64 || compressedDataUrl;
-        setFormData((prev) => ({ ...prev, imageUrl: finalUrl }));
+        const finalUrl = result.base64 || (result.url?.startsWith('data:') ? result.url : null) || activeDataUrl;
+        if (finalUrl) {
+          setFormData((prev) => ({ ...prev, imageUrl: finalUrl }));
+        }
       } else {
         alert('เกิดข้อผิดพลาดในการอัปโหลด: ' + result.error);
       }
@@ -407,22 +408,73 @@ export default function NewAssetPage() {
 
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1.5">รูปภาพครุภัณฑ์ (Asset Photo)</label>
+          
+          {/* Always available hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            disabled={uploading}
+            className="hidden"
+          />
+
           {formData.imageUrl ? (
-            <div className="relative w-full max-w-xs h-48 rounded-2xl overflow-hidden border border-slate-200 group">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={formData.imageUrl} alt="Asset preview" className="w-full h-full object-cover" />
-              <button
-                type="button"
-                onClick={() => setFormData((prev) => ({ ...prev, imageUrl: '' }))}
-                className="absolute top-2 right-2 p-1.5 bg-rose-600 text-white rounded-full hover:bg-rose-700 shadow-md transition cursor-pointer"
-                title="ลบรูปภาพ"
-              >
-                <X className="w-4 h-4" />
-              </button>
+            <div className="space-y-3">
+              <div className="relative w-full max-w-xs h-44 rounded-2xl overflow-hidden border border-slate-200 group bg-slate-50 flex items-center justify-center shadow-xs">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={formData.imageUrl}
+                  alt="Asset preview"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    const parent = e.currentTarget.parentElement;
+                    if (parent) {
+                      const fallback = parent.querySelector('.new-img-fallback');
+                      if (fallback) fallback.classList.remove('hidden');
+                    }
+                  }}
+                />
+                <div className="new-img-fallback hidden flex flex-col items-center justify-center text-slate-400 p-4 text-center">
+                  <ImageIcon className="w-8 h-8 text-slate-300 mb-1 mx-auto" />
+                  <span className="text-xs font-medium text-slate-500">ไม่สามารถแสดงรูปภาพได้</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 max-w-xs">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold transition cursor-pointer border border-indigo-200 shadow-2xs"
+                >
+                  {uploading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-indigo-600"></div>
+                  ) : (
+                    <Upload className="w-4 h-4 text-indigo-600" />
+                  )}
+                  <span>{uploading ? 'กำลังอัปโหลด...' : 'เปลี่ยนรูปภาพ'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFormData((prev) => ({ ...prev, imageUrl: '' }))}
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-bold transition cursor-pointer border border-rose-200"
+                >
+                  <X className="w-4 h-4" />
+                  <span>ลบ</span>
+                </button>
+              </div>
             </div>
           ) : (
-            <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-2xl bg-slate-50 hover:bg-indigo-50/30 transition cursor-pointer">
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex flex-col items-center justify-center w-full max-w-xs h-36 border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-2xl bg-slate-50 hover:bg-indigo-50/30 transition cursor-pointer text-center"
+            >
+              <div className="flex flex-col items-center justify-center p-4">
                 {uploading ? (
                   <div className="animate-spin rounded-full h-7 w-7 border-t-2 border-b-2 border-indigo-600 mb-2"></div>
                 ) : (
@@ -433,8 +485,7 @@ export default function NewAssetPage() {
                 </p>
                 <p className="text-[11px] text-slate-400 mt-0.5">ขนาดไฟล์ไม่เกิน 10 MB</p>
               </div>
-              <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="hidden" />
-            </label>
+            </button>
           )}
         </div>
 
