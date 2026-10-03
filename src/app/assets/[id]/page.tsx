@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, useRef, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Trash2, Printer, QrCode, Calculator, TrendingDown, User, Upload, Image as ImageIcon, X } from 'lucide-react';
@@ -23,6 +23,7 @@ interface DivisionType {
 export default function AssetDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -314,9 +315,25 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
               รูปภาพครุภัณฑ์
             </h2>
             {formData.imageUrl ? (
-              <div className="relative w-full h-52 rounded-xl overflow-hidden border border-slate-200 shadow-inner group">
+              <div className="relative w-full h-52 rounded-xl overflow-hidden border border-slate-200 shadow-inner group bg-slate-50 flex items-center justify-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={formData.imageUrl} alt={formData.name} className="w-full h-full object-cover" />
+                <img
+                  src={formData.imageUrl}
+                  alt={formData.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    const parent = e.currentTarget.parentElement;
+                    if (parent) {
+                      const fallback = parent.querySelector('.card-img-fallback');
+                      if (fallback) fallback.classList.remove('hidden');
+                    }
+                  }}
+                />
+                <div className="card-img-fallback hidden flex flex-col items-center justify-center text-slate-400 p-4">
+                  <ImageIcon className="w-8 h-8 text-slate-300 mb-1 mx-auto" />
+                  <span className="text-xs">รูปภาพเดิมไม่อยู่ในระบบ</span>
+                </div>
               </div>
             ) : (
               <div className="w-full h-40 rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 p-4">
@@ -573,35 +590,87 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">อัปเดต/เปลี่ยนรูปภาพครุภัณฑ์</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">อัปเดต / เปลี่ยนรูปภาพครุภัณฑ์</label>
+            
+            {/* Always available hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              disabled={uploading}
+              className="hidden"
+            />
+
             {formData.imageUrl ? (
-              <div className="relative w-full max-w-xs h-40 rounded-xl overflow-hidden border border-slate-200 group">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={formData.imageUrl} alt="Asset preview" className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => setFormData((prev) => ({ ...prev, imageUrl: '' }))}
-                  className="absolute top-2 right-2 p-1.5 bg-rose-600 text-white rounded-full hover:bg-rose-700 shadow-md transition cursor-pointer"
-                  title="ลบรูปภาพ"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+              <div className="space-y-3">
+                <div className="relative w-full max-w-xs h-44 rounded-xl overflow-hidden border border-slate-200 group bg-slate-50 flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={formData.imageUrl}
+                    alt="Asset preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      const parent = e.currentTarget.parentElement;
+                      if (parent) {
+                        const fallback = parent.querySelector('.form-img-fallback');
+                        if (fallback) fallback.classList.remove('hidden');
+                      }
+                    }}
+                  />
+                  <div className="form-img-fallback hidden flex flex-col items-center justify-center text-slate-400 p-4 text-center">
+                    <ImageIcon className="w-8 h-8 text-slate-300 mb-1 mx-auto" />
+                    <span className="text-xs font-medium text-slate-500">รูปภาพเดิมไม่อยู่ในระบบ</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">กดปุ่มเลือกรูปภาพใหม่ด้านล่าง</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 max-w-xs">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold transition cursor-pointer border border-indigo-200 shadow-2xs"
+                  >
+                    {uploading ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-indigo-600"></div>
+                    ) : (
+                      <Upload className="w-4 h-4 text-indigo-600" />
+                    )}
+                    <span>{uploading ? 'กำลังอัปโหลด...' : 'เลือกรูปภาพใหม่'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, imageUrl: '' }))}
+                    className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-bold transition cursor-pointer border border-rose-200"
+                    title="ลบรูปภาพ"
+                  >
+                    <X className="w-4 h-4" />
+                    <span>ลบ</span>
+                  </button>
+                </div>
               </div>
             ) : (
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-xl bg-slate-50 hover:bg-indigo-50/30 transition cursor-pointer">
-                <div className="flex flex-col items-center justify-center pt-4 pb-5">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="flex flex-col items-center justify-center w-full max-w-xs h-36 border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-xl bg-slate-50 hover:bg-indigo-50/30 transition cursor-pointer text-center"
+              >
+                <div className="flex flex-col items-center justify-center p-4">
                   {uploading ? (
-                    <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-indigo-600 mb-1"></div>
+                    <div className="animate-spin rounded-full h-7 w-7 border-t-2 border-b-2 border-indigo-600 mb-2"></div>
                   ) : (
-                    <Upload className="w-7 h-7 text-indigo-500 mb-1" />
+                    <Upload className="w-8 h-8 text-indigo-500 mb-2" />
                   )}
                   <p className="text-xs font-semibold text-slate-700">
-                    {uploading ? 'กำลังอัปโหลดรูปภาพ...' : 'คลิกเพื่อเปลี่ยน/อัปโหลดรูปภาพใหม่'}
+                    {uploading ? 'กำลังอัปโหลดรูปภาพ...' : 'คลิกเพื่อเลือกไฟล์รูปภาพใหม่ (JPG, PNG, WEBP)'}
                   </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">รองรับ JPG, PNG, WEBP (ไม่เกิน 10 MB)</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">ขนาดไฟล์ไม่เกิน 10 MB</p>
                 </div>
-                <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="hidden" />
-              </label>
+              </button>
             )}
           </div>
 
