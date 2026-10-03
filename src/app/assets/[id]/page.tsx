@@ -225,6 +225,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
           setAuditInfo((prev) => ({ ...prev, updatedBy: data.data.updatedBy }));
         }
         alert('อัปเดตข้อมูลครุภัณฑ์เรียบร้อยแล้ว!');
+        router.push('/assets');
       } else {
         alert('เกิดข้อผิดพลาด: ' + data.error);
       }
@@ -291,13 +292,6 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
           >
             <Printer className="w-4 h-4" />
             พิมพ์สติกเกอร์
-          </button>
-          <button
-            onClick={handleDelete}
-            className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-sm font-semibold transition cursor-pointer"
-          >
-            <Trash2 className="w-4 h-4" />
-            ลบ
           </button>
         </div>
       </div>
