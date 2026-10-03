@@ -46,7 +46,7 @@ export default function NewAssetPage() {
 
   useEffect(() => {
     fetchCategories();
-    fetchDivisions();
+    fetchDivisionsAndUser();
   }, []);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,21 +112,51 @@ export default function NewAssetPage() {
     }
   };
 
-  const fetchDivisions = async () => {
+  const fetchDivisionsAndUser = async () => {
     try {
-      const res = await fetch('/api/divisions');
-      const data = await res.json();
-      if (data.success && data.data.length > 0) {
-        setDivisions(data.data);
-        const firstDiv = data.data[0];
-        setFormData((prev) => ({
-          ...prev,
-          division: firstDiv.name,
-          subDivision: firstDiv.subDivisions?.[0] || '',
-        }));
+      const [divRes, meRes] = await Promise.all([
+        fetch('/api/divisions'),
+        fetch('/api/auth/me'),
+      ]);
+
+      const divData = await divRes.json();
+      const meData = await meRes.json();
+
+      let activeDivisions = TMD_ORGANIZATION;
+      if (divData.success && divData.data.length > 0) {
+        activeDivisions = divData.data;
+        setDivisions(activeDivisions);
       }
+
+      let defaultDivision = activeDivisions[0]?.name || '';
+      let defaultSubDivision = activeDivisions[0]?.subDivisions?.[0] || '';
+
+      if (meData.success && meData.user) {
+        const userAgency = meData.user.agency?.trim();
+        const userDept = meData.user.department?.trim();
+
+        if (userAgency) {
+          const matchedDiv = activeDivisions.find(
+            (d) => d.name.toLowerCase() === userAgency.toLowerCase()
+          );
+          if (matchedDiv) {
+            defaultDivision = matchedDiv.name;
+            if (userDept && matchedDiv.subDivisions?.includes(userDept)) {
+              defaultSubDivision = userDept;
+            } else if (matchedDiv.subDivisions?.length > 0) {
+              defaultSubDivision = matchedDiv.subDivisions[0];
+            }
+          }
+        }
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        division: defaultDivision,
+        subDivision: defaultSubDivision,
+      }));
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch divisions or user profile:', err);
     }
   };
 
