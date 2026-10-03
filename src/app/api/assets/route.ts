@@ -39,17 +39,12 @@ export async function GET(request: Request) {
 
     // Enforce Staff Department / Division Scoping if not Admin
     if (userRole !== 'admin') {
-      const conditions: any[] = [];
+      const escapeRegex = (str: string) => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
       if (userDepartment) {
-        conditions.push({ subDivision: { $regex: `^${userDepartment}$`, $options: 'i' } });
+        query.subDivision = { $regex: `^${escapeRegex(userDepartment)}$`, $options: 'i' };
       }
       if (userAgency) {
-        conditions.push({ division: { $regex: `^${userAgency}$`, $options: 'i' } });
-      }
-
-      if (conditions.length > 0) {
-        query.$and = query.$and || [];
-        query.$and.push({ $or: conditions });
+        query.division = { $regex: `^${escapeRegex(userAgency)}$`, $options: 'i' };
       }
     } else {
       // Admin filter parameters

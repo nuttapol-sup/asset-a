@@ -33,16 +33,12 @@ export async function GET() {
     const query: any = { deleteFlag: 0 };
 
     if (userRole !== 'admin') {
-      const conditions: any[] = [];
+      const escapeRegex = (str: string) => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
       if (userDepartment) {
-        conditions.push({ subDivision: { $regex: `^${userDepartment}$`, $options: 'i' } });
+        query.subDivision = { $regex: `^${escapeRegex(userDepartment)}$`, $options: 'i' };
       }
       if (userAgency) {
-        conditions.push({ division: { $regex: `^${userAgency}$`, $options: 'i' } });
-      }
-
-      if (conditions.length > 0) {
-        query.$and = [{ $or: conditions }];
+        query.division = { $regex: `^${escapeRegex(userAgency)}$`, $options: 'i' };
       }
     }
 
