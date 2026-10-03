@@ -66,11 +66,19 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
     setUploading(true);
     try {
       let fileToUpload = rawFile;
+      let instantPreviewUrl = '';
+
       try {
         const compressed = await compressImage(rawFile, 1000, 1000, 0.78);
         fileToUpload = compressed.compressedFile;
+        instantPreviewUrl = compressed.dataUrl;
       } catch (err) {
         console.warn('Compression skipped, uploading original file', err);
+      }
+
+      // Immediately display compressed base64 preview in UI
+      if (instantPreviewUrl) {
+        setFormData((prev) => ({ ...prev, imageUrl: instantPreviewUrl }));
       }
 
       const data = new FormData();
@@ -82,7 +90,8 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
       });
       const result = await res.json();
       if (result.success) {
-        setFormData((prev) => ({ ...prev, imageUrl: result.url }));
+        const finalUrl = result.url || result.base64 || instantPreviewUrl;
+        setFormData((prev) => ({ ...prev, imageUrl: finalUrl }));
       } else {
         alert('เกิดข้อผิดพลาดในการอัปโหลด: ' + result.error);
       }

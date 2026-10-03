@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Create uploads directories in public folder and root folder for safety
+    // Create uploads directories in public folder and root folder for disk backup
     const publicUploadDir = path.join(process.cwd(), 'public', 'uploads');
     const rootUploadDir = path.join(process.cwd(), 'uploads');
     
@@ -57,10 +57,10 @@ export async function POST(request: Request) {
     const mimeType = file.type || 'image/jpeg';
     const base64Data = `data:${mimeType};base64,${buffer.toString('base64')}`;
 
-    // Return both clean relative URL and compressed Base64 Data URI
+    // Return Base64 Data URI as main url for 100% fail-proof rendering across all devices & restarts
     return NextResponse.json({ 
       success: true, 
-      url: publicUrl,
+      url: base64Data,
       fileUrl: publicUrl,
       base64: base64Data 
     });
