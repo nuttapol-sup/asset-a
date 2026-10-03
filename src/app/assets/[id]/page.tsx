@@ -65,22 +65,32 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
 
     setUploading(true);
     try {
-      let fileToUpload = rawFile;
-      let instantPreviewUrl = '';
+      // 1. Immediately read file as Data URL for instant 0ms preview
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const previewUrl = evt.target?.result as string;
+        if (previewUrl) {
+          setFormData((prev) => ({ ...prev, imageUrl: previewUrl }));
+        }
+      };
+      reader.readAsDataURL(rawFile);
 
+      // 2. Compress image for lightweight storage (~60KB)
+      let fileToUpload = rawFile;
+      let compressedDataUrl = '';
       try {
         const compressed = await compressImage(rawFile, 1000, 1000, 0.78);
         fileToUpload = compressed.compressedFile;
-        instantPreviewUrl = compressed.dataUrl;
+        compressedDataUrl = compressed.dataUrl;
       } catch (err) {
-        console.warn('Compression skipped, uploading original file', err);
+        console.warn('Compression skipped, using raw file', err);
       }
 
-      // Immediately display compressed base64 preview in UI
-      if (instantPreviewUrl) {
-        setFormData((prev) => ({ ...prev, imageUrl: instantPreviewUrl }));
+      if (compressedDataUrl) {
+        setFormData((prev) => ({ ...prev, imageUrl: compressedDataUrl }));
       }
 
+      // 3. Upload to server
       const data = new FormData();
       data.append('file', fileToUpload);
 
@@ -90,7 +100,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
       });
       const result = await res.json();
       if (result.success) {
-        const finalUrl = result.url || result.base64 || instantPreviewUrl;
+        const finalUrl = result.url || result.base64 || compressedDataUrl;
         setFormData((prev) => ({ ...prev, imageUrl: finalUrl }));
       } else {
         alert('เกิดข้อผิดพลาดในการอัปโหลด: ' + result.error);
