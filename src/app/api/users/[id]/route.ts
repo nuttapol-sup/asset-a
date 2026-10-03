@@ -46,10 +46,14 @@ export async function PUT(
 
     // General user update
     const updateData: any = {};
+    if (body.username) updateData.username = body.username.trim();
     if (body.name) updateData.name = body.name.trim();
     if (body.role) updateData.role = body.role;
     if (body.department !== undefined) updateData.department = body.department.trim();
     if (body.agency !== undefined) updateData.agency = body.agency.trim();
+    if (body.password && body.password.trim() !== '') {
+      updateData.password = await hashPassword(body.password);
+    }
 
     const updatedUser = await User.findByIdAndUpdate(id, updateData, { new: true });
     if (!updatedUser) {
@@ -58,6 +62,9 @@ export async function PUT(
 
     return NextResponse.json({ success: true, data: updatedUser });
   } catch (error: any) {
+    if (error?.code === 11000) {
+      return NextResponse.json({ success: false, error: 'Username นี้ถูกใช้งานแล้ว' }, { status: 400 });
+    }
     return NextResponse.json({ success: false, error: error?.message }, { status: 500 });
   }
 }

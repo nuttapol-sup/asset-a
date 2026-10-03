@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { UserPlus, Trash2, KeyRound } from 'lucide-react';
+import { UserPlus, Trash2, KeyRound, Pencil } from 'lucide-react';
 import { TMD_ORGANIZATION, TMDDivision } from '@/lib/organization';
 
 interface UserType {
@@ -19,15 +19,26 @@ export default function UsersPage() {
   const [divisions, setDivisions] = useState<TMDDivision[]>(TMD_ORGANIZATION);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserType | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     username: '',
     password: '',
     name: '',
-    role: 'staff',
+    role: 'staff' as 'admin' | 'staff',
     agency: '',
     department: '',
+  });
+
+  const [editFormData, setEditFormData] = useState({
+    username: '',
+    name: '',
+    role: 'staff' as 'admin' | 'staff',
+    agency: '',
+    department: '',
+    password: '',
   });
 
   useEffect(() => {
@@ -65,6 +76,9 @@ export default function UsersPage() {
   const currentSelectedDivision = divisions.find((d) => d.name === formData.agency);
   const currentSubDivisions = currentSelectedDivision ? currentSelectedDivision.subDivisions : [];
 
+  const editSelectedDivision = divisions.find((d) => d.name === editFormData.agency);
+  const editSubDivisions = editSelectedDivision ? editSelectedDivision.subDivisions : [];
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.username || !formData.password || !formData.name) {
@@ -85,6 +99,51 @@ export default function UsersPage() {
         alert('สร้างผู้ใช้งานใหม่สำเร็จ!');
         setShowModal(false);
         setFormData({ username: '', password: '', name: '', role: 'staff', agency: '', department: '' });
+        fetchUsers();
+      } else {
+        alert('เกิดข้อผิดพลาด: ' + data.error);
+      }
+    } catch (err: any) {
+      alert('เกิดข้อผิดพลาด: ' + err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleStartEdit = (user: UserType) => {
+    setEditingUser(user);
+    setEditFormData({
+      username: user.username,
+      name: user.name,
+      role: user.role,
+      agency: user.agency || '',
+      department: user.department || '',
+      password: '',
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    if (!editFormData.username || !editFormData.name) {
+      alert('กรุณากรอก Username และชื่อ-นามสกุล');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/users/${editingUser._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editFormData),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert('แก้ไขข้อมูลผู้ใช้เรียบร้อยแล้ว!');
+        setShowEditModal(false);
+        setEditingUser(null);
         fetchUsers();
       } else {
         alert('เกิดข้อผิดพลาด: ' + data.error);
@@ -139,7 +198,7 @@ export default function UsersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">จัดการผู้ใช้งานในระบบ</h1>
-          <p className="text-sm text-slate-500 mt-1">สิทธิ์สำหรับ Admin ในการเพิ่ม ลบ รีเซ็ตรหัสผ่าน และกำหนดส่วนราชการ/บทบาทผู้ใช้งาน</p>
+          <p className="text-sm text-slate-500 mt-1">สิทธิ์สำหรับ Admin ในการเพิ่ม แก้ไข ลบ รีเซ็ตรหัสผ่าน และกำหนดส่วนราชการ/บทบาทผู้ใช้งาน</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -194,6 +253,14 @@ export default function UsersPage() {
                     <td className="py-3.5 px-4 text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         <button
+                          onClick={() => handleStartEdit(u)}
+                          title="แก้ไขข้อมูลผู้ใช้งาน"
+                          className="px-2.5 py-1 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition cursor-pointer inline-flex items-center gap-1"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          <span>แก้ไข</span>
+                        </button>
+                        <button
                           onClick={() => handleResetPassword(u._id, u.username)}
                           title="รีเซ็ตรหัสผ่านเป็น tmd1234"
                           className="px-2.5 py-1 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition cursor-pointer inline-flex items-center gap-1"
@@ -240,7 +307,7 @@ export default function UsersPage() {
                   placeholder="เช่น user001"
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-900"
                 />
               </div>
 
@@ -254,7 +321,7 @@ export default function UsersPage() {
                   placeholder="กำหนดรหัสผ่าน"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-900"
                 />
               </div>
 
@@ -268,7 +335,7 @@ export default function UsersPage() {
                   placeholder="เช่น นายสมชาย สายเทค"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-900"
                 />
               </div>
 
@@ -321,7 +388,7 @@ export default function UsersPage() {
                     placeholder="เช่น ฝ่ายเทคโนโลยีสารสนเทศ"
                     value={formData.department}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-900"
                   />
                 )}
               </div>
@@ -331,7 +398,7 @@ export default function UsersPage() {
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'staff' })}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-slate-900"
                 >
                   <option value="staff">Staff (เจ้าหน้าที่)</option>
                   <option value="admin">Admin (ผู้ดูแลระบบ)</option>
@@ -352,6 +419,147 @@ export default function UsersPage() {
                   className="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition shadow-md disabled:opacity-50 cursor-pointer"
                 >
                   {submitting ? 'กำลังบันทึก...' : 'บันทึกผู้ใช้'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edit User */}
+      {showEditModal && editingUser && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-indigo-600" />
+              แก้ไขข้อมูลผู้ใช้งาน (@{editingUser.username})
+            </h3>
+
+            <form onSubmit={handleUpdateUser} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Username <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="เช่น user001"
+                  value={editFormData.username}
+                  onChange={(e) => setEditFormData({ ...editFormData, username: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  ชื่อ - นามสกุล <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="เช่น นายสมชาย สายเทค"
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  ส่วนราชการ (กอง / สำนัก / ศูนย์)
+                </label>
+                <select
+                  value={editFormData.agency}
+                  onChange={(e) => {
+                    const selectedDivName = e.target.value;
+                    const selectedDiv = divisions.find((d) => d.name === selectedDivName);
+                    setEditFormData({
+                      ...editFormData,
+                      agency: selectedDivName,
+                      department: selectedDiv?.subDivisions[0] || '',
+                    });
+                  }}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-900"
+                >
+                  <option value="">-- เลือกส่วนราชการ --</option>
+                  {divisions.map((div) => (
+                    <option key={div.name} value={div.name}>
+                      {div.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  แผนก / สังกัด (ฝ่าย / กลุ่ม / ศูนย์)
+                </label>
+                {editSubDivisions.length > 0 ? (
+                  <select
+                    value={editFormData.department}
+                    onChange={(e) => setEditFormData({ ...editFormData, department: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-900"
+                  >
+                    <option value="">-- เลือกแผนก / สังกัด --</option>
+                    {editSubDivisions.map((sub) => (
+                      <option key={sub} value={sub}>
+                        {sub}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    placeholder="เช่น ฝ่ายเทคโนโลยีสารสนเทศ"
+                    value={editFormData.department}
+                    onChange={(e) => setEditFormData({ ...editFormData, department: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-900"
+                  />
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">บทบาท (Role)</label>
+                <select
+                  value={editFormData.role}
+                  onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as 'admin' | 'staff' })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-slate-900"
+                >
+                  <option value="staff">Staff (เจ้าหน้าที่)</option>
+                  <option value="admin">Admin (ผู้ดูแลระบบ)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  เปลี่ยนรหัสผ่านใหม่ <span className="text-slate-400 font-normal text-[11px]">(เว้นว่างไว้หากไม่ต้องการเปลี่ยน)</span>
+                </label>
+                <input
+                  type="password"
+                  placeholder="กรอกรหัสผ่านใหม่ (ถ้ามี)"
+                  value={editFormData.password}
+                  onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-900"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingUser(null);
+                  }}
+                  className="flex-1 bg-slate-100 text-slate-700 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-200 transition cursor-pointer"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition shadow-md disabled:opacity-50 cursor-pointer"
+                >
+                  {submitting ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}
                 </button>
               </div>
             </form>
