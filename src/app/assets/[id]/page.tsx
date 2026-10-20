@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Trash2, Printer, QrCode, Calculator, TrendingDown, User, Upload, Image as ImageIcon, X } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Printer, QrCode, Calculator, TrendingDown, User, Upload, Image as ImageIcon, X, ZoomIn, ExternalLink } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { calculateStraightLineDepreciation, DepreciationResult } from '@/lib/depreciation';
 import { TMD_ORGANIZATION } from '@/lib/organization';
@@ -28,6 +28,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [divisions, setDivisions] = useState<DivisionType[]>(TMD_ORGANIZATION);
   const [auditInfo, setAuditInfo] = useState<{ createdBy?: string; updatedBy?: string }>({});
@@ -306,12 +307,16 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
               รูปภาพครุภัณฑ์
             </h2>
             {formData.imageUrl ? (
-              <div className="relative w-full h-52 rounded-xl overflow-hidden border border-slate-200 shadow-inner group bg-slate-50 flex items-center justify-center">
+              <div
+                onClick={() => setShowImageModal(true)}
+                className="relative w-full h-52 rounded-xl overflow-hidden border border-slate-200 shadow-inner group bg-slate-50 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-indigo-500 transition"
+                title="คลิกเพื่อดูรูปภาพขนาดใหญ่"
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={formData.imageUrl}
                   alt={formData.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                     const parent = e.currentTarget.parentElement;
@@ -321,6 +326,10 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                     }
                   }}
                 />
+                <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5 text-white text-xs font-semibold backdrop-blur-2xs">
+                  <ZoomIn className="w-5 h-5" />
+                  <span>คลิกเพื่อดูรูปขนาดเต็ม</span>
+                </div>
                 <div className="card-img-fallback hidden flex flex-col items-center justify-center text-slate-400 p-4">
                   <ImageIcon className="w-8 h-8 text-slate-300 mb-1 mx-auto" />
                   <span className="text-xs">รูปภาพเดิมไม่อยู่ในระบบ</span>
@@ -595,12 +604,16 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
 
             {formData.imageUrl ? (
               <div className="space-y-3">
-                <div className="relative w-full max-w-xs h-44 rounded-xl overflow-hidden border border-slate-200 group bg-slate-50 flex items-center justify-center">
+                <div
+                  onClick={() => setShowImageModal(true)}
+                  className="relative w-full max-w-xs h-44 rounded-xl overflow-hidden border border-slate-200 group bg-slate-50 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-indigo-500 transition"
+                  title="คลิกเพื่อดูรูปภาพขนาดใหญ่"
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={formData.imageUrl}
                     alt="Asset preview"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                       const parent = e.currentTarget.parentElement;
@@ -610,6 +623,10 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                       }
                     }}
                   />
+                  <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5 text-white text-xs font-semibold backdrop-blur-2xs">
+                    <ZoomIn className="w-5 h-5" />
+                    <span>คลิกเพื่อดูรูปขนาดเต็ม</span>
+                  </div>
                   <div className="form-img-fallback hidden flex flex-col items-center justify-center text-slate-400 p-4 text-center">
                     <ImageIcon className="w-8 h-8 text-slate-300 mb-1 mx-auto" />
                     <span className="text-xs font-medium text-slate-500">รูปภาพเดิมไม่อยู่ในระบบ</span>
@@ -740,6 +757,59 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Fullscreen Image Preview Lightbox Modal */}
+      {showImageModal && formData.imageUrl && (
+        <div
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
+          onClick={() => setShowImageModal(false)}
+        >
+          {/* Top Bar inside Lightbox */}
+          <div className="w-full max-w-4xl flex items-center justify-between pb-3 text-white">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-sm sm:text-base truncate max-w-md">{formData.name}</span>
+              <span className="text-xs bg-white/20 px-2 py-0.5 rounded font-mono">{formData.assetCode}</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <a
+                href={formData.imageUrl}
+                target="_blank"
+                rel="noreferrer"
+                download={`asset-${formData.assetCode}.jpg`}
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-semibold transition"
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span>เปิดรูปเต็ม</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowImageModal(false)}
+                className="p-1.5 bg-white/10 hover:bg-rose-600 rounded-xl text-white transition cursor-pointer"
+                title="ปิด (Close)"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Image Container */}
+          <div
+            className="relative max-w-4xl max-h-[80vh] w-full flex items-center justify-center rounded-2xl overflow-hidden bg-black/40 border border-white/10 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={formData.imageUrl}
+              alt={formData.name}
+              className="max-h-[80vh] max-w-full object-contain rounded-xl select-none"
+            />
+          </div>
+
+          <p className="text-xs text-slate-400 mt-3 text-center">คลิกบริเวณด้านนอกเพื่อปิดหน้าต่าง</p>
         </div>
       )}
     </div>
