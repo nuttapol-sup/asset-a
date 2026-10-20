@@ -214,8 +214,8 @@ export default function AssetsListPage() {
 
       {/* Filter Bar */}
       <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-          <div className="relative lg:col-span-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+          <div className="relative md:col-span-2 lg:col-span-3 xl:col-span-2">
             <Search className="w-4 h-4 absolute left-3 top-3.5 text-slate-400" />
             <input
               type="text"
@@ -258,23 +258,60 @@ export default function AssetsListPage() {
           </div>
 
           {scope?.role === 'admin' && (
-            <div className="relative">
-              <select
-                value={divisionFilter}
-                onChange={(e) => {
-                  setDivisionFilter(e.target.value);
-                  setSubDivisionFilter('');
-                }}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition font-medium"
-              >
-                <option value="">ทุกส่วนราชการ (All Divisions)</option>
-                {divisions.map((div) => (
-                  <option key={div._id} value={div.name}>
-                    {div.name}
+            <>
+              <div className="relative">
+                <select
+                  value={divisionFilter}
+                  onChange={(e) => {
+                    setDivisionFilter(e.target.value);
+                    setSubDivisionFilter('');
+                  }}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition font-medium"
+                >
+                  <option value="">ทุกกอง / สำนัก / ศูนย์</option>
+                  {divisions.map((div) => (
+                    <option key={div._id} value={div.name}>
+                      {div.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="relative">
+                <select
+                  value={subDivisionFilter}
+                  onChange={(e) => setSubDivisionFilter(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition font-medium"
+                >
+                  <option value="">
+                    {divisionFilter ? `ทุกส่วนราชการใน (${divisionFilter})` : 'ทุกส่วนราชการ / ฝ่าย'}
                   </option>
-                ))}
-              </select>
-            </div>
+                  {divisionFilter ? (
+                    divisions
+                      .filter((d) => d.name === divisionFilter)
+                      .map((div) => (
+                        <optgroup key={div._id} label={`📂 ${div.name}`}>
+                          {div.subDivisions.map((sub) => (
+                            <option key={`${div._id}-${sub}`} value={sub}>
+                              {sub}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))
+                  ) : (
+                    divisions.map((div) => (
+                      <optgroup key={div._id} label={`📂 ${div.name}`}>
+                        {div.subDivisions.map((sub) => (
+                          <option key={`${div._id}-${sub}`} value={sub}>
+                            {sub}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))
+                  )}
+                </select>
+              </div>
+            </>
           )}
         </div>
       </div>

@@ -94,10 +94,18 @@ export default function ReportsPage() {
   const [borrows, setBorrows] = useState<BorrowRecordItem[]>([]);
   const [scope, setScope] = useState<{ role: string; agency?: string; department?: string } | null>(null);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+
   useEffect(() => {
     fetchReportData();
     fetchDivisions();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, categoryFilter, statusFilter, divisionFilter, subDivisionFilter]);
 
   const fetchDivisions = async () => {
     try {
@@ -148,6 +156,13 @@ export default function ReportsPage() {
 
     return matchSearch && matchCategory && matchStatus && matchDivision && matchSubDivision;
   });
+
+  // Pagination calculation for assets tab
+  const totalFilteredAssets = filteredAssets.length;
+  const totalPages = pageSize === 0 ? 1 : Math.ceil(totalFilteredAssets / pageSize);
+  const startIndex = pageSize === 0 ? 0 : (currentPage - 1) * pageSize;
+  const endIndex = pageSize === 0 ? totalFilteredAssets : Math.min(startIndex + pageSize, totalFilteredAssets);
+  const paginatedAssets = filteredAssets.slice(startIndex, endIndex);
 
   const handlePrint = () => {
     window.print();
@@ -504,7 +519,9 @@ export default function ReportsPage() {
         <div className={`bg-white rounded-2xl border border-slate-200 print:border-none shadow-sm overflow-hidden ${activeTab !== 'assets' ? 'hidden print:block' : ''}`}>
           <div className="p-4 border-b border-slate-100 flex items-center justify-between print:hidden">
             <h2 className="font-bold text-slate-900 text-base">ตารางทะเบียนครุภัณฑ์และการคำนวณค่าเสื่อมราคา</h2>
-            <span className="text-xs text-slate-500 font-sans">พบ {filteredAssets.length} รายการ</span>
+            <span className="text-xs text-slate-500 font-sans">
+              พบ {totalFilteredAssets} รายการ {pageSize > 0 && totalPages > 1 ? `(แสดงหน้า ${currentPage}/${totalPages})` : ''}
+            </span>
           </div>
 
           <div className="overflow-x-auto">
@@ -526,16 +543,16 @@ export default function ReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-sans">
-                {filteredAssets.length === 0 ? (
+                {totalFilteredAssets === 0 ? (
                   <tr>
                     <td colSpan={12} className="py-8 text-center text-slate-400 font-sans">
                       ไม่พบข้อมูลครุภัณฑ์ตามเงื่อนไขที่เลือก
                     </td>
                   </tr>
                 ) : (
-                  filteredAssets.map((item, idx) => (
+                  paginatedAssets.map((item, idx) => (
                     <tr key={item._id} className="hover:bg-slate-50/80 transition print:bg-white">
-                      <td className="py-3 px-2 text-center text-slate-400 font-mono">{idx + 1}</td>
+                      <td className="py-3 px-2 text-center text-slate-400 font-mono">{startIndex + idx + 1}</td>
                       <td className="py-3 px-3">
                         <div className="font-bold text-indigo-950 font-mono">{item.assetCode}</div>
                       </td>
@@ -584,11 +601,11 @@ export default function ReportsPage() {
                 )}
               </tbody>
               {/* Summary Footer Row (Matching Image Footer SUM row) */}
-              {filteredAssets.length > 0 && (
+              {totalFilteredAssets > 0 && (
                 <tfoot className="bg-slate-100/90 border-t-2 border-slate-300 font-mono font-bold text-slate-900 print:bg-slate-100">
                   <tr>
                     <td colSpan={9} className="py-3.5 px-3 text-right font-sans font-bold text-slate-800">
-                      ผลรวมทั้งหมด ({filteredAssets.length} รายการ):
+                      ผลรวมทั้งหมด ({totalFilteredAssets} รายการ):
                     </td>
                     <td className="py-3.5 px-3 text-right font-black text-indigo-900 print:text-black">
                       ฿{filteredAssets.reduce((sum, item) => sum + item.price, 0).toLocaleString()}
@@ -604,6 +621,59 @@ export default function ReportsPage() {
               )}
             </table>
           </div>
+
+          {/* Pagination Footer (Matching Assets Page) */}
+          {totalFilteredAssets > 0 && (
+            <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-medium text-slate-600 print:hidden">
+              <div>
+                แสดง <span className="font-bold text-slate-900">{startIndex + 1}</span> ถึง{' '}
+                <span className="font-bold text-slate-900">{endIndex}</span> จากทั้งหมด{' '}
+                <span className="font-bold text-slate-900">{totalFilteredAssets}</span> รายการ
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span>แสดงต่อหน้า:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
+                  >
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                    <option value={200}>200</option>
+                    <option value={0}>ทั้งหมด (All)</option>
+                  </select>
+                </div>
+
+                {pageSize > 0 && totalPages > 1 && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 cursor-pointer font-bold"
+                    >
+                      ก่อนหน้า
+                    </button>
+                    <span className="px-2 font-bold text-indigo-600">
+                      {currentPage} / {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 cursor-pointer font-bold"
+                    >
+                      ถัดไป
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
