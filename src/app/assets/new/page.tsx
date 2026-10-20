@@ -80,7 +80,7 @@ export default function NewAssetPage() {
       const data = new FormData();
       data.append('file', fileToUpload);
 
-      const res = await fetch('/api/upload', {
+      const res = await fetch('/assets/api/upload', {
         method: 'POST',
         body: data,
       });
@@ -101,7 +101,7 @@ export default function NewAssetPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch('/api/categories');
+      const res = await fetch('/assets/api/categories');
       const data = await res.json();
       if (data.success && data.data.length > 0) {
         setCategories(data.data);
@@ -115,8 +115,8 @@ export default function NewAssetPage() {
   const fetchDivisionsAndUser = async () => {
     try {
       const [divRes, meRes] = await Promise.all([
-        fetch('/api/divisions'),
-        fetch('/api/auth/me'),
+        fetch('/assets/api/divisions'),
+        fetch('/assets/api/auth/me'),
       ]);
 
       const divData = await divRes.json();
@@ -185,7 +185,7 @@ export default function NewAssetPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch('/api/assets', {
+      const res = await fetch('/assets/api/assets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

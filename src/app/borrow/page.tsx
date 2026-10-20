@@ -48,7 +48,7 @@ export default function BorrowPage() {
   const fetchRecords = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/borrow');
+      const res = await fetch('/assets/api/borrow');
       const data = await res.json();
       if (data.success) {
         setRecords(data.data);
@@ -62,7 +62,7 @@ export default function BorrowPage() {
 
   const fetchAvailableAssets = async () => {
     try {
-      const res = await fetch('/api/assets?status=ปกติ');
+      const res = await fetch('/assets/api/assets?status=ปกติ');
       const data = await res.json();
       if (data.success) {
         setAvailableAssets(data.data);
@@ -81,7 +81,7 @@ export default function BorrowPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch('/api/borrow', {
+      const res = await fetch('/assets/api/borrow', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -113,7 +113,7 @@ export default function BorrowPage() {
   const handleReturnAsset = async (recordId: string, assetName: string) => {
     if (!confirm(`ยืนยันการรับคืนครุภัณฑ์ "${assetName}" หรือไม่?`)) return;
     try {
-      const res = await fetch(`/api/borrow/${recordId}/return`, { method: 'POST' });
+      const res = await fetch(`/assets/api/borrow/${recordId}/return`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         alert('รับคืนครุภัณฑ์เรียบร้อยแล้ว!');

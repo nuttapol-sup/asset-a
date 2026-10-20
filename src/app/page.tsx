@@ -37,7 +37,7 @@ export default function DashboardPage() {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/dashboard/stats');
+      const res = await fetch('/assets/api/dashboard/stats');
       const data = await res.json();
       if (data.success) {
         setStats(data.data);

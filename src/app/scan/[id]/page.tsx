@@ -48,7 +48,7 @@ export default function ScanAssetPage({ params }: { params: Promise<{ id: string
   const fetchAssetData = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/scan/${id}`);
+      const res = await fetch(`/assets/api/scan/${id}`);
       const data = await res.json();
       if (data.success) {
         setAsset(data.data);

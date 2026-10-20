@@ -15,7 +15,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch('/assets/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -23,7 +23,7 @@ export default function LoginPage() {
 
       const data = await res.json();
       if (data.success) {
-        window.location.href = '/';
+        window.location.href = '/assets';
       } else {
         setError(data.error || 'เข้าสู่ระบบไม่สำเร็จ');
       }

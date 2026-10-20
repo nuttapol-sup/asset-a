@@ -28,7 +28,7 @@ export default function CategoriesPage() {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/categories');
+      const res = await fetch('/assets/api/categories');
       const data = await res.json();
       if (data.success) {
         setCategories(data.data);
@@ -49,7 +49,7 @@ export default function CategoriesPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch('/api/categories', {
+      const res = await fetch('/assets/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -74,7 +74,7 @@ export default function CategoriesPage() {
   const handleDeleteCategory = async (id: string, name: string) => {
     if (!confirm(`ยืนยันลบหมวดหมู่ "${name}" หรือไม่?`)) return;
     try {
-      const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/assets/api/categories/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         alert('ลบหมวดหมู่สำเร็จ');
