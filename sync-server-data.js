@@ -18,13 +18,26 @@ async function syncData() {
   const db = mongoose.connection.db;
   const assetsCollection = db.collection('assets');
   const categoriesCollection = db.collection('categories');
+  const divisionsCollection = db.collection('divisions');
 
   const raw = fs.readFileSync(BACKUP_FILE, 'utf8');
-  const { assets, categories } = JSON.parse(raw);
+  const { assets, categories, divisions } = JSON.parse(raw);
 
-  console.log(`Read ${assets.length} assets and ${categories.length} categories from file.`);
+  console.log(`Read ${assets.length} assets, ${categories?.length || 0} categories, and ${divisions?.length || 0} divisions from file.`);
 
-  // 1. Sync Categories
+  // 1. Sync Divisions
+  if (divisions && divisions.length > 0) {
+    for (const div of divisions) {
+      await divisionsCollection.updateOne(
+        { name: div.name },
+        { $set: { subDivisions: div.subDivisions, updatedAt: new Date() } },
+        { upsert: true }
+      );
+    }
+    console.log('Synced divisions and subDivisions.');
+  }
+
+  // 2. Sync Categories
   if (categories && categories.length > 0) {
     const existingCats = await categoriesCollection.find().toArray();
     const existingNames = new Set(existingCats.map((c) => c.name));
