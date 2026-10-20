@@ -18,13 +18,17 @@ export async function middleware(request: NextRequest) {
 
   const token = request.cookies.get('auth_token')?.value;
 
+  // Determine login URL preserving any subpath prefix like /assets
+  const forwardedPrefix = request.headers.get('x-forwarded-prefix') || '';
+  const loginPath = forwardedPrefix ? `${forwardedPrefix}/login` : '/login';
+
   if (!token) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL(loginPath, request.url));
   }
 
   const payload = await verifyJWT(token);
   if (!payload) {
-    const response = NextResponse.redirect(new URL('/login', request.url));
+    const response = NextResponse.redirect(new URL(loginPath, request.url));
     response.cookies.delete('auth_token');
     return response;
   }
