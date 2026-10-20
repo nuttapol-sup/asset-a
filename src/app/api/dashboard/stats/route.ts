@@ -35,10 +35,10 @@ export async function GET() {
     if (userRole !== 'admin') {
       const escapeRegex = (str: string) => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
       if (userDepartment) {
-        query.subDivision = { $regex: `^${escapeRegex(userDepartment)}$`, $options: 'i' };
+        query.subDivision = { $regex: escapeRegex(userDepartment), $options: 'i' };
       }
       if (userAgency) {
-        query.division = { $regex: `^${escapeRegex(userAgency)}$`, $options: 'i' };
+        query.division = { $regex: escapeRegex(userAgency), $options: 'i' };
       }
     }
 
