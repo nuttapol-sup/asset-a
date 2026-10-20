@@ -550,54 +550,105 @@ export default function ReportsPage() {
                     </td>
                   </tr>
                 ) : (
-                  paginatedAssets.map((item, idx) => (
-                    <tr key={item._id} className="hover:bg-slate-50/80 transition print:bg-white">
-                      <td className="py-3 px-2 text-center text-slate-400 font-mono">{startIndex + idx + 1}</td>
-                      <td className="py-3 px-3">
-                        <div className="font-bold text-indigo-950 font-mono">{item.assetCode}</div>
-                      </td>
-                      <td className="py-3 px-3 text-slate-600 font-mono">{item.secondaryAssetCode || '-'}</td>
-                      <td className="py-3 px-3 font-semibold text-slate-900">{item.name}</td>
-                      <td className="py-3 px-3 text-slate-700">{item.category}</td>
-                      <td className="py-3 px-3 text-slate-600">
-                        {item.brand || item.model ? `${item.brand} ${item.model}`.trim() : '-'}
-                      </td>
-                      <td className="py-3 px-3 text-slate-700">
-                        <div className="font-semibold text-slate-800">{item.division || '-'}</div>
-                        {item.subDivision && <div className="text-[11px] text-slate-600">{item.subDivision}</div>}
-                        <div className="text-[11px] text-slate-400">ห้อง/สถานที่: {item.location} ({item.custodian})</div>
-                      </td>
-                      <td className="py-3 px-2 text-center whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap ${
-                            item.status === 'ปกติ'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : item.status === 'ถูกยืม'
-                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                              : item.status === 'รอซ่อม'
-                              ? 'bg-sky-50 text-sky-700 border border-sky-200'
-                              : item.status === 'ชำรุด'
-                              ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                              : 'bg-slate-100 text-slate-700 border border-slate-300'
-                          }`}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center text-slate-600 font-mono">
-                        {item.purchaseDate !== '-' ? item.purchaseDate : '-'}
-                      </td>
-                      <td className="py-3 px-3 text-right font-black text-slate-900 font-mono">
-                        ฿{item.price.toLocaleString()}
-                      </td>
-                      <td className="py-3 px-3 text-right font-bold text-rose-600 font-mono">
-                        ฿{item.accumulatedDepreciation.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-                      <td className="py-3 px-3 text-right font-black text-emerald-700 font-mono">
-                        ฿{item.netBookValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-                    </tr>
-                  ))
+                  <>
+                    {/* Screen View: Show Paginated Assets */}
+                    {paginatedAssets.map((item, idx) => (
+                      <tr key={`screen-${item._id}`} className="hover:bg-slate-50/80 transition print:hidden">
+                        <td className="py-3 px-2 text-center text-slate-400 font-mono">{startIndex + idx + 1}</td>
+                        <td className="py-3 px-3">
+                          <div className="font-bold text-indigo-950 font-mono">{item.assetCode}</div>
+                        </td>
+                        <td className="py-3 px-3 text-slate-600 font-mono">{item.secondaryAssetCode || '-'}</td>
+                        <td className="py-3 px-3 font-semibold text-slate-900">{item.name}</td>
+                        <td className="py-3 px-3 text-slate-700">{item.category}</td>
+                        <td className="py-3 px-3 text-slate-600">
+                          {item.brand || item.model ? `${item.brand} ${item.model}`.trim() : '-'}
+                        </td>
+                        <td className="py-3 px-3 text-slate-700">
+                          <div className="font-semibold text-slate-800">{item.division || '-'}</div>
+                          {item.subDivision && <div className="text-[11px] text-slate-600">{item.subDivision}</div>}
+                          <div className="text-[11px] text-slate-400">ห้อง/สถานที่: {item.location} ({item.custodian})</div>
+                        </td>
+                        <td className="py-3 px-2 text-center whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap ${
+                              item.status === 'ปกติ'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : item.status === 'ถูกยืม'
+                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                : item.status === 'รอซ่อม'
+                                ? 'bg-sky-50 text-sky-700 border border-sky-200'
+                                : item.status === 'ชำรุด'
+                                ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                : 'bg-slate-100 text-slate-700 border border-slate-300'
+                            }`}
+                          >
+                            {item.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-center text-slate-600 font-mono">
+                          {item.purchaseDate !== '-' ? item.purchaseDate : '-'}
+                        </td>
+                        <td className="py-3 px-3 text-right font-black text-slate-900 font-mono">
+                          ฿{item.price.toLocaleString()}
+                        </td>
+                        <td className="py-3 px-3 text-right font-bold text-rose-600 font-mono">
+                          ฿{item.accumulatedDepreciation.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-3 px-3 text-right font-black text-emerald-700 font-mono">
+                          ฿{item.netBookValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    ))}
+
+                    {/* Print / PDF View: Always Show ALL Filtered Assets */}
+                    {filteredAssets.map((item, idx) => (
+                      <tr key={`print-${item._id}`} className="hidden print:table-row print:bg-white border-b border-slate-200">
+                        <td className="py-2 px-2 text-center text-slate-600 font-mono text-[10px]">{idx + 1}</td>
+                        <td className="py-2 px-2 font-bold text-indigo-950 font-mono text-[10px]">{item.assetCode}</td>
+                        <td className="py-2 px-2 text-slate-600 font-mono text-[10px]">{item.secondaryAssetCode || '-'}</td>
+                        <td className="py-2 px-2 font-semibold text-slate-900 text-[10px]">{item.name}</td>
+                        <td className="py-2 px-2 text-slate-700 text-[10px]">{item.category}</td>
+                        <td className="py-2 px-2 text-slate-600 text-[10px]">
+                          {item.brand || item.model ? `${item.brand} ${item.model}`.trim() : '-'}
+                        </td>
+                        <td className="py-2 px-2 text-slate-700 text-[10px]">
+                          <div className="font-semibold text-slate-800">{item.division || '-'}</div>
+                          {item.subDivision && <div className="text-[9px] text-slate-600">{item.subDivision}</div>}
+                          <div className="text-[9px] text-slate-500">ห้อง/สถานที่: {item.location} ({item.custodian})</div>
+                        </td>
+                        <td className="py-2 px-2 text-center whitespace-nowrap text-[10px]">
+                          <span
+                            className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                              item.status === 'ปกติ'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : item.status === 'ถูกยืม'
+                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                : item.status === 'รอซ่อม'
+                                ? 'bg-sky-50 text-sky-700 border border-sky-200'
+                                : item.status === 'ชำรุด'
+                                ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                : 'bg-slate-100 text-slate-700 border border-slate-300'
+                            }`}
+                          >
+                            {item.status}
+                          </span>
+                        </td>
+                        <td className="py-2 px-2 text-center text-slate-600 font-mono text-[10px]">
+                          {item.purchaseDate !== '-' ? item.purchaseDate : '-'}
+                        </td>
+                        <td className="py-2 px-2 text-right font-bold text-slate-900 font-mono text-[10px]">
+                          ฿{item.price.toLocaleString()}
+                        </td>
+                        <td className="py-2 px-2 text-right font-medium text-rose-600 font-mono text-[10px]">
+                          ฿{item.accumulatedDepreciation.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-2 px-2 text-right font-bold text-emerald-700 font-mono text-[10px]">
+                          ฿{item.netBookValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    ))}
+                  </>
                 )}
               </tbody>
               {/* Summary Footer Row (Matching Image Footer SUM row) */}
