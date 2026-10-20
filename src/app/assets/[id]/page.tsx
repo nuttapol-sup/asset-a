@@ -261,41 +261,68 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      {/* Top Header */}
-      <div className="flex items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/assets"
-            className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-bold text-slate-900">{formData.name}</h1>
-              <span className="px-2.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-mono font-bold rounded-md">
-                {formData.assetCode}
-              </span>
-              {formData.secondaryAssetCode && (
-                <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 text-xs font-mono font-bold rounded-md">
-                  {formData.secondaryAssetCode}
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-slate-500 mt-0.5">รายละเอียด การคำนวณค่าเสื่อมราคา และแก้ไขข้อมูลครุภัณฑ์</p>
+      {/* Printable Sticker Only Area (Visible only when Printing) */}
+      <div className="hidden print:flex print:items-center print:justify-center print:w-full print:min-h-screen">
+        <div className="w-[320px] p-4 bg-yellow-300 rounded-2xl border-2 border-slate-900 flex flex-col items-center justify-between text-center space-y-3 text-slate-900 font-mono shadow-sm">
+          {/* Header Asset Codes */}
+          <div className="text-sm font-extrabold flex flex-col items-center justify-center gap-0.5 leading-tight">
+            <span>{formData.assetCode}</span>
+            {formData.secondaryAssetCode && <span>{formData.secondaryAssetCode}</span>}
+          </div>
+
+          {/* QR Code Container */}
+          <div className="bg-white p-4 rounded-xl inline-block shadow-sm">
+            <QRCodeSVG
+              value={typeof window !== 'undefined' ? `${window.location.origin}/scan/${id}` : `/scan/${id}`}
+              size={220}
+              level="H"
+            />
+          </div>
+
+          {/* Footer Asset Name */}
+          <div className="text-xs font-sans font-bold px-1 line-clamp-2 leading-tight">
+            {formData.name}
           </div>
         </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition cursor-pointer"
-          >
-            <Printer className="w-4 h-4" />
-            พิมพ์สติกเกอร์
-          </button>
-        </div>
       </div>
+
+      {/* Screen View (Hidden when Printing) */}
+      <div className="space-y-6 print:hidden">
+        {/* Top Header */}
+        <div className="flex items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/assets"
+              className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-2xl font-bold text-slate-900">{formData.name}</h1>
+                <span className="px-2.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-mono font-bold rounded-md">
+                  {formData.assetCode}
+                </span>
+                {formData.secondaryAssetCode && (
+                  <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 text-xs font-mono font-bold rounded-md">
+                    {formData.secondaryAssetCode}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-slate-500 mt-0.5">รายละเอียด การคำนวณค่าเสื่อมราคา และแก้ไขข้อมูลครุภัณฑ์</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition cursor-pointer"
+            >
+              <Printer className="w-4 h-4" />
+              พิมพ์สติกเกอร์
+            </button>
+          </div>
+        </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Image Card, QR Code Tag & Audit Log */}
@@ -759,6 +786,8 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
       )}
+
+      </div> {/* Close Screen View (print:hidden) */}
 
       {/* Fullscreen Image Preview Lightbox Modal */}
       {showImageModal && formData.imageUrl && (
