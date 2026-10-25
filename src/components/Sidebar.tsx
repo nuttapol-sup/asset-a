@@ -1,5 +1,7 @@
 'use client';
 
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
+
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, Boxes, ArrowLeftRight, LogOut, UserCheck, Users, Tags, FileText, Building2, X } from 'lucide-react';
@@ -30,7 +32,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
   const fetchUser = async () => {
     try {
-      const res = await fetch('/assets/api/auth/me');
+      const res = await fetchWithAuth('/assets/api/auth/me');
       const data = await res.json();
       if (data.success) {
         setCurrentUser(data.user);
@@ -43,7 +45,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const handleLogout = async () => {
     if (!confirm('ต้องการออกจากระบบใช่หรือไม่?')) return;
     try {
-      await fetch('/assets/api/auth/logout', { method: 'POST' });
+      await fetchWithAuth('/assets/api/auth/logout', { method: 'POST' });
       router.push('/login');
       router.refresh();
     } catch (err: any) {

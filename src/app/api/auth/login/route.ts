@@ -62,12 +62,13 @@ export async function POST(request: Request) {
       },
     });
 
+    // Set Session Cookie (30 days / 2,592,000 seconds) so session doesn't expire quickly
     response.cookies.set('auth_token', token, {
       httpOnly: true,
-      secure: false, // Set to false so HTTP access (e.g. http://10.10.10.222:3002) allows cookie storage in browser
+      secure: false, // Set to false so both HTTP/HTTPS access store cookies reliably
       sameSite: 'lax',
       path: '/',
-      maxAge: 86400,
+      maxAge: 30 * 24 * 60 * 60, // 30 Days
     });
 
     return response;

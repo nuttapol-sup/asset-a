@@ -1,5 +1,7 @@
 'use client';
 
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
+
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -80,7 +82,7 @@ export default function NewAssetPage() {
       const data = new FormData();
       data.append('file', fileToUpload);
 
-      const res = await fetch('/assets/api/upload', {
+      const res = await fetchWithAuth('/assets/api/upload', {
         method: 'POST',
         body: data,
       });
@@ -101,7 +103,7 @@ export default function NewAssetPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch('/assets/api/categories');
+      const res = await fetchWithAuth('/assets/api/categories');
       const data = await res.json();
       if (data.success && data.data.length > 0) {
         setCategories(data.data);
@@ -115,8 +117,8 @@ export default function NewAssetPage() {
   const fetchDivisionsAndUser = async () => {
     try {
       const [divRes, meRes] = await Promise.all([
-        fetch('/assets/api/divisions'),
-        fetch('/assets/api/auth/me'),
+        fetchWithAuth('/assets/api/divisions'),
+        fetchWithAuth('/assets/api/auth/me'),
       ]);
 
       const divData = await divRes.json();
@@ -185,7 +187,7 @@ export default function NewAssetPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch('/assets/api/assets', {
+      const res = await fetchWithAuth('/assets/api/assets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

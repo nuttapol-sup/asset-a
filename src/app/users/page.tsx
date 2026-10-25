@@ -1,5 +1,7 @@
 'use client';
 
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
+
 import { useEffect, useState } from 'react';
 import { UserPlus, Trash2, KeyRound, Pencil } from 'lucide-react';
 import { TMD_ORGANIZATION, TMDDivision } from '@/lib/organization';
@@ -49,7 +51,7 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/assets/api/users');
+      const res = await fetchWithAuth('/assets/api/users');
       const data = await res.json();
       if (data.success) {
         setUsers(data.data);
@@ -63,7 +65,7 @@ export default function UsersPage() {
 
   const fetchDivisions = async () => {
     try {
-      const res = await fetch('/assets/api/divisions');
+      const res = await fetchWithAuth('/assets/api/divisions');
       const data = await res.json();
       if (data.success && data.data.length > 0) {
         setDivisions(data.data);
@@ -88,7 +90,7 @@ export default function UsersPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch('/assets/api/users', {
+      const res = await fetchWithAuth('/assets/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -133,7 +135,7 @@ export default function UsersPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/assets/api/users/${editingUser._id}`, {
+      const res = await fetchWithAuth(`/assets/api/users/${editingUser._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editFormData),
@@ -159,7 +161,7 @@ export default function UsersPage() {
     if (!confirm(`ยืนยันการรีเซ็ตรหัสผ่านสำหรับผู้ใช้ "@${username}" เป็น "tmd1234" หรือไม่?`)) return;
 
     try {
-      const res = await fetch(`/assets/api/users/${id}`, {
+      const res = await fetchWithAuth(`/assets/api/users/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'reset-password', newPassword: 'tmd1234' }),
@@ -179,7 +181,7 @@ export default function UsersPage() {
   const handleDeleteUser = async (id: string, username: string) => {
     if (!confirm(`ยืนยันลบบัญชีผู้ใช้ "${username}" หรือไม่?`)) return;
     try {
-      const res = await fetch(`/assets/api/users/${id}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`/assets/api/users/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         alert('ลบผู้ใช้งานสำเร็จ');

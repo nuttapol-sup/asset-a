@@ -1,5 +1,7 @@
 'use client';
 
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
+
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Search, Filter, PlusCircle, Eye, Trash2, QrCode, Image as ImageIcon, ShieldCheck } from 'lucide-react';
@@ -63,7 +65,7 @@ export default function AssetsListPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch('/assets/api/categories');
+      const res = await fetchWithAuth('/assets/api/categories');
       const data = await res.json();
       if (data.success) {
         setCategories(data.data);
@@ -75,7 +77,7 @@ export default function AssetsListPage() {
 
   const fetchDivisions = async () => {
     try {
-      const res = await fetch('/assets/api/divisions');
+      const res = await fetchWithAuth('/assets/api/divisions');
       const data = await res.json();
       if (data.success) {
         setDivisions(data.data);
@@ -95,7 +97,7 @@ export default function AssetsListPage() {
       if (divisionFilter) query.append('division', divisionFilter);
       if (subDivisionFilter) query.append('subDivision', subDivisionFilter);
 
-      const res = await fetch(`/assets/api/assets?${query.toString()}`);
+      const res = await fetchWithAuth(`/assets/api/assets?${query.toString()}`);
       const data = await res.json();
       if (data.success) {
         setAssets(data.data);
@@ -120,7 +122,7 @@ export default function AssetsListPage() {
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`ยืนยันลบรายการครุภัณฑ์ "${name}" หรือไม่?`)) return;
     try {
-      const res = await fetch(`/assets/api/assets/${id}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`/assets/api/assets/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         setAssets(assets.filter((a) => a._id !== id));

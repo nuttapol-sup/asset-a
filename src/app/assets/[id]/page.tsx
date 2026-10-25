@@ -1,5 +1,7 @@
 'use client';
 
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
+
 import { useEffect, useState, useRef, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -92,7 +94,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
       const data = new FormData();
       data.append('file', fileToUpload);
 
-      const res = await fetch('/assets/api/upload', {
+      const res = await fetchWithAuth('/assets/api/upload', {
         method: 'POST',
         body: data,
       });
@@ -125,7 +127,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch('/assets/api/categories');
+      const res = await fetchWithAuth('/assets/api/categories');
       const data = await res.json();
       if (data.success) {
         setCategories(data.data);
@@ -137,7 +139,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
 
   const fetchDivisions = async () => {
     try {
-      const res = await fetch('/assets/api/divisions');
+      const res = await fetchWithAuth('/assets/api/divisions');
       const data = await res.json();
       if (data.success && data.data.length > 0) {
         setDivisions(data.data);
@@ -150,7 +152,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
   const fetchAsset = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/assets/api/assets/${id}`);
+      const res = await fetchWithAuth(`/assets/api/assets/${id}`);
       const data = await res.json();
       if (data.success) {
         const item = data.data;
@@ -209,7 +211,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await fetch(`/assets/api/assets/${id}`, {
+      const res = await fetchWithAuth(`/assets/api/assets/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -240,7 +242,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
   const handleDelete = async () => {
     if (!confirm(`ยืนยันลบรายการครุภัณฑ์ "${formData.name}" หรือไม่?`)) return;
     try {
-      const res = await fetch(`/assets/api/assets/${id}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`/assets/api/assets/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         alert('ลบรายการสำเร็จ');

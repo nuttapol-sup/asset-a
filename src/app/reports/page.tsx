@@ -1,5 +1,7 @@
 'use client';
 
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
+
 import { useEffect, useState } from 'react';
 import {
   FileText,
@@ -109,7 +111,7 @@ export default function ReportsPage() {
 
   const fetchDivisions = async () => {
     try {
-      const res = await fetch('/assets/api/divisions');
+      const res = await fetchWithAuth('/assets/api/divisions');
       const data = await res.json();
       if (data.success) {
         setDivisions(data.data);
@@ -122,7 +124,7 @@ export default function ReportsPage() {
   const fetchReportData = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/assets/api/reports');
+      const res = await fetchWithAuth('/assets/api/reports');
       const data = await res.json();
       if (data.success) {
         setSummary(data.data.summary);

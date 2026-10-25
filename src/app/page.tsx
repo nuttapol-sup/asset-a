@@ -1,5 +1,7 @@
 'use client';
 
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
+
 import { useEffect, useState } from 'react';
 import { Boxes, Banknote, ArrowLeftRight, Wrench, AlertTriangle, CheckCircle2, ShieldAlert, PlusCircle, TrendingDown, Calculator, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
@@ -37,7 +39,7 @@ export default function DashboardPage() {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/assets/api/dashboard/stats');
+      const res = await fetchWithAuth('/assets/api/dashboard/stats');
       const data = await res.json();
       if (data.success) {
         setStats(data.data);

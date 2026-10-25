@@ -5,6 +5,7 @@ import { verifyJWT } from '@/lib/auth';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Next.js with basePath: '/assets' already strips basePath from request.nextUrl.pathname
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/auth') ||
@@ -16,19 +17,30 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // If this is an API route call and unauthorized, return JSON 401 instead of HTML redirect
   const token = request.cookies.get('auth_token')?.value;
 
-  // Determine login URL preserving any subpath prefix like /assets
-  const forwardedPrefix = request.headers.get('x-forwarded-prefix') || '';
-  const loginPath = forwardedPrefix ? `${forwardedPrefix}/login` : '/login';
+  if (pathname.startsWith('/api/')) {
+    if (!token) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Session expired' }, { status: 401 });
+    }
+    const payload = await verifyJWT(token);
+    if (!payload) {
+      const response = NextResponse.json({ success: false, error: 'Unauthorized: Session expired' }, { status: 401 });
+      response.cookies.delete('auth_token');
+      return response;
+    }
+    return NextResponse.next();
+  }
 
+  // For UI page routes: redirect to /login (Next.js automatically adds basePath /assets/login)
   if (!token) {
-    return NextResponse.redirect(new URL(loginPath, request.url));
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   const payload = await verifyJWT(token);
   if (!payload) {
-    const response = NextResponse.redirect(new URL(loginPath, request.url));
+    const response = NextResponse.redirect(new URL('/login', request.url));
     response.cookies.delete('auth_token');
     return response;
   }

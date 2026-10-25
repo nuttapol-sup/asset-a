@@ -1,5 +1,7 @@
 'use client';
 
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
+
 import { useEffect, useState } from 'react';
 import { Building2, Plus, Trash2, Edit3, FolderPlus, Layers, X, Check } from 'lucide-react';
 
@@ -37,7 +39,7 @@ export default function DivisionsPage() {
   const fetchDivisions = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/assets/api/divisions');
+      const res = await fetchWithAuth('/assets/api/divisions');
       const data = await res.json();
       if (data.success) {
         setDivisions(data.data);
@@ -63,7 +65,7 @@ export default function DivisionsPage() {
         .map((s) => s.trim())
         .filter((s) => s.length > 0);
 
-      const res = await fetch('/assets/api/divisions', {
+      const res = await fetchWithAuth('/assets/api/divisions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -95,7 +97,7 @@ export default function DivisionsPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/assets/api/divisions/${editingDivision._id}`, {
+      const res = await fetchWithAuth(`/assets/api/divisions/${editingDivision._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -123,7 +125,7 @@ export default function DivisionsPage() {
   const handleDeleteDivision = async (id: string, name: string) => {
     if (!confirm(`ยืนยันลบกอง / สำนัก / ศูนย์ "${name}" หรือไม่?`)) return;
     try {
-      const res = await fetch(`/assets/api/divisions/${id}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`/assets/api/divisions/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         alert('ลบข้อมูลเรียบร้อยแล้ว');
@@ -147,7 +149,7 @@ export default function DivisionsPage() {
 
     const updatedSubDivs = [...div.subDivisions, text];
     try {
-      const res = await fetch(`/assets/api/divisions/${div._id}`, {
+      const res = await fetchWithAuth(`/assets/api/divisions/${div._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subDivisions: updatedSubDivs }),
@@ -171,7 +173,7 @@ export default function DivisionsPage() {
 
     const updatedSubDivs = div.subDivisions.filter((s) => s !== subName);
     try {
-      const res = await fetch(`/assets/api/divisions/${div._id}`, {
+      const res = await fetchWithAuth(`/assets/api/divisions/${div._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subDivisions: updatedSubDivs }),

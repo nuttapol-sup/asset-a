@@ -18,7 +18,7 @@ export async function signJWT(payload: { userId: string; username: string; name:
   return new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('24h')
+    .setExpirationTime('30d') // Session lasts 30 days
     .sign(JWT_SECRET);
 }
 
