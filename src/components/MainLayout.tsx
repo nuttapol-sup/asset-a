@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import { Menu, Boxes } from 'lucide-react';
@@ -8,6 +8,44 @@ import { Menu, Boxes } from 'lucide-react';
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // 60-minute inactivity auto-logout
+  useEffect(() => {
+    if (pathname === '/login' || pathname.startsWith('/scan/')) return;
+
+    let timer: NodeJS.Timeout;
+    const INACTIVITY_LIMIT_MS = 60 * 60 * 1000; // 60 minutes
+
+    const handleTimeout = async () => {
+      try {
+        await fetch('/assets/api/auth/logout', { method: 'POST' });
+      } catch {
+        // ignore
+      } finally {
+        window.location.href = '/assets/login';
+      }
+    };
+
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(handleTimeout, INACTIVITY_LIMIT_MS);
+    };
+
+    const activityEvents = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+    activityEvents.forEach((event) => {
+      window.addEventListener(event, resetTimer, { passive: true });
+    });
+
+    // Start timer on mount
+    resetTimer();
+
+    return () => {
+      clearTimeout(timer);
+      activityEvents.forEach((event) => {
+        window.removeEventListener(event, resetTimer);
+      });
+    };
+  }, [pathname]);
 
   // Dedicated full-bleed pages without admin sidebar or top navigation
   if (pathname === '/login' || pathname.startsWith('/scan/')) {
