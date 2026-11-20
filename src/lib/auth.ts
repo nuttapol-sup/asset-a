@@ -30,3 +30,21 @@ export async function verifyJWT(token: string) {
     return null;
   }
 }
+
+export async function signMfaTempToken(payload: { userId: string; username: string }) {
+  return new SignJWT({ ...payload, stage: 'mfa_pending' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('5m') // 5 minutes to complete MFA verification
+    .sign(JWT_SECRET);
+}
+
+export async function verifyMfaTempToken(token: string) {
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET);
+    if (payload.stage !== 'mfa_pending') return null;
+    return payload as unknown as { userId: string; username: string; stage: string };
+  } catch {
+    return null;
+  }
+}

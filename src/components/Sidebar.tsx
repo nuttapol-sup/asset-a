@@ -4,8 +4,9 @@ import { fetchWithAuth } from '@/lib/fetchWithAuth';
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Boxes, ArrowLeftRight, LogOut, UserCheck, Users, Tags, FileText, Building2, X } from 'lucide-react';
+import { LayoutDashboard, Boxes, ArrowLeftRight, LogOut, UserCheck, Users, Tags, FileText, Building2, X, ShieldCheck } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import MfaModal from '@/components/MfaModal';
 
 interface CurrentUser {
   userId: string;
@@ -23,6 +24,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [showMfaModal, setShowMfaModal] = useState(false);
 
   useEffect(() => {
     if (pathname !== '/login' && !pathname.startsWith('/scan/')) {
@@ -96,19 +98,33 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         </div>
 
         {currentUser && (
-          <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-3 mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="p-1.5 bg-indigo-500/20 text-indigo-400 rounded-lg shrink-0">
-                <UserCheck className="w-4 h-4" />
+          <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-3 mb-6 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5 overflow-hidden">
+                <div className="p-1.5 bg-indigo-500/20 text-indigo-400 rounded-lg shrink-0">
+                  <UserCheck className="w-4 h-4" />
+                </div>
+                <div className="truncate">
+                  <p className="text-xs font-bold text-slate-100 truncate">{currentUser.name}</p>
+                  <p className="text-[10px] text-slate-400 truncate">@{currentUser.username}</p>
+                </div>
               </div>
-              <div className="truncate">
-                <p className="text-xs font-bold text-slate-100 truncate">{currentUser.name}</p>
-                <p className="text-[10px] text-slate-400 truncate">@{currentUser.username}</p>
-              </div>
+              <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-indigo-600 text-white shrink-0">
+                {currentUser.role}
+              </span>
             </div>
-            <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-indigo-600 text-white shrink-0">
-              {currentUser.role}
-            </span>
+
+            <button
+              type="button"
+              onClick={() => setShowMfaModal(true)}
+              className="w-full flex items-center justify-between px-2.5 py-1.5 bg-slate-900/70 hover:bg-slate-900 text-slate-300 hover:text-white rounded-lg border border-slate-700/70 transition text-xs font-semibold cursor-pointer group"
+            >
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400 group-hover:text-indigo-300" />
+                <span>Google Authen (2FA)</span>
+              </div>
+              <span className="text-[10px] text-slate-400">ตั้งค่า →</span>
+            </button>
           </div>
         )}
 
@@ -165,6 +181,12 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           </aside>
         </div>
       )}
+
+      {/* MFA Security Modal */}
+      <MfaModal
+        isOpen={showMfaModal}
+        onClose={() => setShowMfaModal(false)}
+      />
     </>
   );
 }

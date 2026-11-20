@@ -3,7 +3,7 @@
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
 
 import { useEffect, useState } from 'react';
-import { UserPlus, Trash2, KeyRound, Pencil } from 'lucide-react';
+import { UserPlus, Trash2, KeyRound, Pencil, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { TMD_ORGANIZATION, TMDDivision } from '@/lib/organization';
 
 interface UserType {
@@ -13,6 +13,7 @@ interface UserType {
   role: 'admin' | 'staff';
   agency?: string;
   department?: string;
+  mfaEnabled?: boolean;
   createdAt: string;
 }
 
@@ -178,6 +179,33 @@ export default function UsersPage() {
     }
   };
 
+  const handleResetMfa = async (id: string, username: string) => {
+    if (
+      !confirm(
+        `ต้องการรีเซ็ตการยืนยันตัวตน 2 ขั้นตอน (Google Authenticator) สำหรับ @${username} หรือไม่?\n\nเมื่อรีเซ็ตแล้ว ผู้ใช้จะไม่ต้องกรอกรหัสจากแอปอีกจนกว่าจะตั้งค่าใหม่`
+      )
+    )
+      return;
+
+    try {
+      const res = await fetchWithAuth(`/assets/api/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reset-mfa' }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message || 'รีเซ็ต 2FA สำเร็จ');
+        fetchUsers();
+      } else {
+        alert('เกิดข้อผิดพลาด: ' + data.error);
+      }
+    } catch (err: any) {
+      alert('เกิดข้อผิดพลาด: ' + err.message);
+    }
+  };
+
   const handleDeleteUser = async (id: string, username: string) => {
     if (!confirm(`ยืนยันลบบัญชีผู้ใช้ "${username}" หรือไม่?`)) return;
     try {
@@ -227,6 +255,7 @@ export default function UsersPage() {
                   <th className="py-3.5 px-4">ส่วนราชการ</th>
                   <th className="py-3.5 px-4">แผนก / สังกัด</th>
                   <th className="py-3.5 px-4 text-center">บทบาท (Role)</th>
+                  <th className="py-3.5 px-4 text-center">2FA (Google)</th>
                   <th className="py-3.5 px-4">วันที่สร้าง</th>
                   <th className="py-3.5 px-4 text-center">จัดการ</th>
                 </tr>
@@ -249,6 +278,16 @@ export default function UsersPage() {
                         </span>
                       )}
                     </td>
+                    <td className="py-3.5 px-4 text-center">
+                      {u.mfaEnabled ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-black rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                          เปิดใช้งาน
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-400 font-medium">ไม่ได้เปิด</span>
+                      )}
+                    </td>
                     <td className="py-3.5 px-4 text-slate-500 text-xs">
                       {new Date(u.createdAt).toLocaleDateString('th-TH')}
                     </td>
@@ -268,8 +307,18 @@ export default function UsersPage() {
                           className="px-2.5 py-1 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition cursor-pointer inline-flex items-center gap-1"
                         >
                           <KeyRound className="w-3.5 h-3.5" />
-                          <span>Reset</span>
+                          <span>Reset รหัส</span>
                         </button>
+                        {u.mfaEnabled && (
+                          <button
+                            onClick={() => handleResetMfa(u._id, u.username)}
+                            title="รีเซ็ต / ปิดการใช้งาน 2FA ให้ผู้ใช้ (กรณีทำโทรศัพท์หาย)"
+                            className="px-2.5 py-1 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition cursor-pointer inline-flex items-center gap-1"
+                          >
+                            <ShieldAlert className="w-3.5 h-3.5" />
+                            <span>รีเซ็ต 2FA</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDeleteUser(u._id, u.username)}
                           title="ลบผู้ใช้งาน"

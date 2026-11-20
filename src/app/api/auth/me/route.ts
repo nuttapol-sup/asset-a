@@ -30,6 +30,7 @@ export async function GET() {
         role: dbUser?.role || payload.role,
         agency: dbUser?.agency || '',
         department: dbUser?.department || '',
+        mfaEnabled: !!dbUser?.mfaEnabled,
       },
     });
   } catch (error: any) {

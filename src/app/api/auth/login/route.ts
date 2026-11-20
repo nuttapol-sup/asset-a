@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import User from '@/models/User';
-import { verifyPassword, hashPassword, signJWT } from '@/lib/auth';
+import { verifyPassword, hashPassword, signJWT, signMfaTempToken } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
@@ -42,6 +42,21 @@ export async function POST(request: Request) {
 
     if (!isMatch) {
       return NextResponse.json({ success: false, error: 'Username หรือ Password ไม่ถูกต้อง' }, { status: 401 });
+    }
+
+    // Check if user has MFA (Google Authenticator) enabled
+    if (user.mfaEnabled && user.mfaSecret) {
+      const mfaToken = await signMfaTempToken({
+        userId: user._id.toString(),
+        username: user.username,
+      });
+
+      return NextResponse.json({
+        success: true,
+        requireMfa: true,
+        mfaToken,
+        username: user.username,
+      });
     }
 
     const token = await signJWT({

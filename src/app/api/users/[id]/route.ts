@@ -44,6 +44,23 @@ export async function PUT(
       });
     }
 
+    // Reset MFA action
+    if (body.action === 'reset-mfa') {
+      const updatedUser = await User.findByIdAndUpdate(
+        id,
+        { mfaEnabled: false, mfaSecret: null },
+        { new: true }
+      );
+      if (!updatedUser) {
+        return NextResponse.json({ success: false, error: 'ไม่พบผู้ใช้งาน' }, { status: 404 });
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `รีเซ็ตการยืนยันตัวตน 2 ขั้นตอน (Google Authenticator) สำหรับ @${updatedUser.username} เรียบร้อยแล้ว`,
+      });
+    }
+
     // General user update
     const updateData: any = {};
     if (body.username) updateData.username = body.username.trim();

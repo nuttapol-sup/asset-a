@@ -18,7 +18,7 @@ export async function GET() {
     }
 
     await connectToDatabase();
-    const users = await User.find({}, '-password').sort({ createdAt: -1 });
+    const users = await User.find({}, '-password -mfaSecret').sort({ createdAt: -1 });
     return NextResponse.json({ success: true, data: users });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error?.message }, { status: 500 });

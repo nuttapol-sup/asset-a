@@ -14,6 +14,8 @@ const UserSchema = new Schema(
     },
     department: { type: String, trim: true },
     agency: { type: String, trim: true }, // ส่วนราชการ
+    mfaEnabled: { type: Boolean, default: false },
+    mfaSecret: { type: String, default: null },
   },
   { timestamps: true }
 );
